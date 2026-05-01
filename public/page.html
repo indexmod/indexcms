@@ -1,30 +1,39 @@
+const PAGE = `
 <!doctype html>
 <html>
-<head>
-<meta charset="utf-8">
-<title>Page</title>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-</head>
 <body>
 
-<a href="/">← back</a>
-<a id="edit">edit</a>
+<a href="/">back</a>
+<button id="edit">edit</button>
 
 <h1 id="title"></h1>
-<div id="content"></div>
+<pre id="content"></pre>
 
 <script>
-const slug = location.pathname.split("/").pop();
+const slug = location.pathname.split('/').pop();
 
-fetch("/api/page/" + slug)
+fetch('/api/page/' + slug)
 .then(r => r.json())
-.then(data => {
-  document.getElementById("title").textContent = data.title;
-  document.getElementById("content").innerHTML = marked.parse(data.content || "");
+.then(d => {
 
-  document.getElementById("edit").href = "/editor";
+  document.getElementById('title').textContent = d.title;
+
+  const fm =
+'---\\n' +
+'id: ' + (d.id || '') + '\\n' +
+'title: ' + (d.title || '') + '\\n' +
+'slug: ' + (d.slug || '') + '\\n' +
+'---\\n\\n' +
+(d.content || '');
+
+  document.getElementById('content').textContent = fm;
+
+  document.getElementById('edit').onclick = () => {
+    location.href = '/editor?slug=' + slug;
+  };
 });
 </script>
 
 </body>
 </html>
+`;
