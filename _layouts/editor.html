@@ -1,0 +1,25 @@
+---
+layout: default
+---
+
+<h1>New Page</h1>
+
+<input id="title" placeholder="Title"><br><br>
+<input id="slug" placeholder="Slug"><br><br>
+<textarea id="content" placeholder="Markdown"></textarea><br><br>
+
+<button id="save">Save</button>
+
+<script type="module">
+import { savePage } from "/assets/api.js";
+
+save.onclick = async () => {
+  await savePage({
+    title: title.value,
+    slug: slug.value,
+    content: content.value
+  });
+
+  location.href = "/";
+};
+</script>
