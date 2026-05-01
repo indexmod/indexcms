@@ -30,17 +30,26 @@ md.addEventListener("input", () => {
 });
 
 function save() {
-  fetch("/api/save", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+  const id = (md.value.match(/id:\s*(.*)/)?.[1] || '').trim();
+  const title = (md.value.match(/title:\s*(.*)/)?.[1] || '').trim();
+
+  const slugInput = (md.value.match(/slug:\s*(.*)/)?.[1] || '').trim();
+
+  const slug =
+    slugInput && slugInput !== "new-page"
+      ? slugInput
+      : title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
+  fetch('/api/save', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
-      title: document.getElementById("title").value,
-      slug: document.getElementById("slug").value,
+      id,
+      title,
+      slug,
       content: md.value
     })
-  }).then(() => {
-    location.href = "/";
-  });
+  }).then(() => location.href = '/');
 }
 </script>
 

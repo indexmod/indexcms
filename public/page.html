@@ -10,28 +10,35 @@ const PAGE = `
 <pre id="content"></pre>
 
 <script>
-const slug = location.pathname.split('/').pop();
+  async function savePage(req, env) {
+    const data = await req.json();
 
-fetch('/api/page/' + slug)
-.then(r => r.json())
-.then(d => {
+    const title = data.title || "untitled";
 
-  document.getElementById('title').textContent = d.title;
+    // auto slug ALWAYS safe
+    const slug =
+      data.slug && data.slug.trim() !== ""
+        ? data.slug
+        : title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/(^-|-$)/g, "");
 
-  const fm =
-"---\\n" +
-"id: " + (d.id || "") + "\\n" +
-"title: " + (d.title || "") + "\\n" +
-"slug: " + (d.slug || "") + "\\n" +
-"---\\n\\n" +
-(d.content || "");
+    const id = data.id || crypto.randomUUID();
 
-  document.getElementById('content').textContent = fm;
+    const md = `---
+  id: ${id}
+  title: ${title}
+  slug: ${slug}
+  ---
 
-  document.getElementById('edit').onclick = () => {
-    location.href = '/editor?slug=' + slug;
-  };
-});
+  ${data.content || ""}
+  `;
+
+    await env.PAGES.put(`${slug}.md`, md);
+
+    return json({ ok: true, slug });
+  }
 </script>
 
 </body>
