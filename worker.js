@@ -1,4 +1,3 @@
-
 // ================= SAFE JSON =================
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -7,7 +6,7 @@ function json(data, status = 200) {
   });
 }
 
-// ================= HTML RESPONSE =================
+// ================= HTML =================
 function htmlPage(html) {
   return new Response(html, {
     headers: { "Content-Type": "text/html; charset=utf-8" }
@@ -76,39 +75,46 @@ async function getPage(env, slug) {
   return json(parsed);
 }
 
-// ================= LIST =================
+// ================= LIST (SAFE, NO CRASH) =================
 async function listPages(env) {
-  const list = await env.PAGES.list();
+  try {
+    const list = await env.PAGES.list();
 
-  const pages = [];
+    const keys = list?.keys || [];
 
-  for (const k of list.keys) {
-    const obj = await env.PAGES.get(k.name);
+    const pages = [];
 
-    if (!obj) continue;
+    for (const k of keys) {
+      if (!k?.name) continue;
 
-    const text = await obj.text();
-    const p = parseMD(text);
+      const obj = await env.PAGES.get(k.name);
+      if (!obj) continue;
 
-    if (p.slug) {
-      pages.push({
-        title: p.title,
-        slug: p.slug
-      });
+      const text = await obj.text();
+      const p = parseMD(text);
+
+      if (p.slug) {
+        pages.push({
+          title: p.title,
+          slug: p.slug
+        });
+      }
     }
-  }
 
-  return json(pages);
+    return json(pages);
+  } catch (e) {
+    return json({
+      error: "list crash",
+      message: e.message
+    }, 500);
+  }
 }
 
 // ================= HTML UI =================
 const INDEX_HTML = `
 <!doctype html>
 <html>
-<head>
-<meta charset="utf-8">
-<title>IndexCMS</title>
-</head>
+<head><meta charset="utf-8"><title>IndexCMS</title></head>
 <body>
 
 <h1>Pages</h1>
@@ -173,9 +179,10 @@ const EDITOR_HTML = `
 <head>
 <meta charset="utf-8">
 <title>Editor</title>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
+
+<h2>Editor</h2>
 
 <input id="title" placeholder="title"><br>
 <input id="slug" placeholder="slug"><br>
@@ -185,17 +192,7 @@ const EDITOR_HTML = `
 <br>
 <button onclick="save()">Save</button>
 
-<h3>Preview</h3>
-<div id="preview"></div>
-
 <script>
-const md = document.getElementById('md');
-
-md.addEventListener('input', () => {
-  document.getElementById('preview').innerHTML =
-    marked.parse(md.value);
-});
-
 function save() {
   fetch('/api/save', {
     method: 'POST',
@@ -203,7 +200,7 @@ function save() {
     body: JSON.stringify({
       title: document.getElementById('title').value,
       slug: document.getElementById('slug').value,
-      content: md.value
+      content: document.getElementById('md').value
     })
   }).then(() => {
     location.href = '/';
@@ -222,8 +219,7 @@ export default {
     const path = url.pathname;
 
     try {
-
-      // ===== API =====
+      // API
       if (path === "/api/save") return savePage(req, env);
 
       if (path.startsWith("/api/page/")) {
@@ -233,7 +229,7 @@ export default {
 
       if (path === "/api/pages") return listPages(env);
 
-      // ===== UI =====
+      // UI
       if (path === "/") return htmlPage(INDEX_HTML);
       if (path === "/editor") return htmlPage(EDITOR_HTML);
       if (path.startsWith("/page/")) return htmlPage(PAGE_HTML);
@@ -241,10 +237,7 @@ export default {
       return new Response("Not found", { status: 404 });
 
     } catch (e) {
-      return json({
-        error: "worker crash",
-        message: e.message
-      }, 500);
+      return json({ error: "fatal", message: e.message }, 500);
     }
   }
 };
