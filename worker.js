@@ -1,4 +1,3 @@
-
 // ================= JSON =================
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -30,9 +29,7 @@ async function save(req, env) {
 // ================= GET FILE =================
 async function getFile(env, name) {
   const file = await env.PAGES.get(name);
-  if (!file) return "";
-
-  return await file.text();
+  return file ? await file.text() : "";
 }
 
 // ================= LIST =================
@@ -41,12 +38,13 @@ async function list(env) {
 
   const files = res.keys
     .map(k => k.name)
-    .filter(n => n.endsWith(".md") || n.endsWith(".txt"))
-    .sort();
+    .filter(n => n.endsWith(".md"))
+    .sort((a, b) => a.localeCompare(b));
 
   return json(files);
 }
 
+// ================= INDEX =================
 const INDEX = `
 <!doctype html>
 <html>
@@ -54,7 +52,7 @@ const INDEX = `
 
 <h1>Pages</h1>
 
-<button onclick="location.href='/file/new.md'">+ New</button>
+<button onclick="location.href='/file/__new__'">+ New</button>
 
 <div id="list">loading...</div>
 
@@ -91,11 +89,16 @@ const EDITOR = `
 <textarea id="md" style="width:100%;height:90vh;"></textarea>
 
 <script>
-const name = decodeURIComponent(location.pathname.split('/').pop());
+let name = location.pathname.split('/').pop();
+
+// NEW FILE → generate real name
+if (name === "__new__") {
+  name = crypto.randomUUID() + ".md";
+}
 
 function template() {
   return \`---
-id: 123456789
+id: \${crypto.randomUUID()}
 title: Edit title here
 permalink: Edit permalink here
 ---
@@ -150,7 +153,7 @@ const VIEW = `
 <div id="out"></div>
 
 <script>
-const name = decodeURIComponent(location.pathname.split('/').pop());
+const name = location.pathname.split('/').pop();
 
 fetch('/api/file/' + encodeURIComponent(name))
 .then(r => r.text())
@@ -187,11 +190,7 @@ export default {
 
       // UI
       if (path === "/") return html(INDEX);
-
-      // EDITOR
       if (path.startsWith("/file/")) return html(EDITOR);
-
-      // VIEW
       if (path.startsWith("/view/")) return html(VIEW);
 
       return new Response("404", { status: 404 });
