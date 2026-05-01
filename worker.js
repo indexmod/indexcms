@@ -8,28 +8,6 @@ function html(c) {
 }
 
 // =========================================================
-// ================= FRONTMATTER PARSER ==================
-// =========================================================
-function parse(md = "") {
-  const m = md.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-  if (!m) return { title: "", slug: "", content: md };
-
-  const fm = {};
-  m[1].split("\n").forEach(l => {
-    const i = l.indexOf(":");
-    if (i === -1) return;
-    fm[l.slice(0, i).trim()] = l.slice(i + 1).trim();
-  });
-
-  return {
-    id: fm.id || "",
-    title: fm.title || "",
-    slug: fm.slug || "",
-    content: m[2]
-  };
-}
-
-// =========================================================
 // ================= R2 HELPERS ==========================
 // =========================================================
 const file = (slug) => slug + ".md";
@@ -44,32 +22,18 @@ async function put(env, slug, content) {
 }
 
 // =========================================================
-// ================= LIST (FIXED) ========================
+// ================= LIST (СТАБИЛЬНАЯ ВЕРСИЯ) ===========
 // =========================================================
 async function list(env) {
   const res = await env.PAGES.list();
 
-  const out = [];
-
-  for (const k of res.keys) {
-    if (!k.name.endsWith(".md")) continue;
-
-    const raw = await get(env, k.name.replace(".md", ""));
-    if (!raw) continue;
-
-    const p = parse(raw);
-
-    out.push({
-      slug: k.name.replace(".md", ""),
-      title: p.title || k.name.replace(".md", "")
-    });
-  }
-
-  return out;
+  return res.keys
+    .map(k => k.name)
+    .filter(n => n.endsWith(".md"));
 }
 
 // =========================================================
-// ================= INDEX PAGE ==========================
+// ================= INDEX ===============================
 // =========================================================
 const INDEX = `
 <!doctype html>
@@ -84,19 +48,22 @@ const INDEX = `
 <script>
 fetch("/_list")
 .then(r => r.json())
-.then(items => {
+.then(files => {
   const el = document.getElementById("list");
   el.innerHTML = "";
 
-  if (!items.length) {
+  if (!files.length) {
     el.innerHTML = "no pages yet";
     return;
   }
 
-  items.forEach(p => {
+  files.forEach(f => {
+    const slug = f.replace(".md", "");
+
     const a = document.createElement("a");
-    a.href = "/" + p.slug;
-    a.textContent = p.title;   // ✅ ВОТ ТЕПЕРЬ ТАЙТЛ
+    a.href = "/" + slug;
+    a.textContent = slug;
+
     el.appendChild(a);
     el.appendChild(document.createElement("br"));
   });
@@ -147,19 +114,17 @@ const EDITOR = `
 <script>
 const slug = location.pathname.split("/").pop();
 
-const tpl = (id, title, slug) => \`---
-id: \${id}
-title: \${title}
-slug: \${slug}
+async function load() {
+  if (location.pathname === "/new") {
+    document.getElementById("md").value =
+\`---
+id: \${crypto.randomUUID()}
+title: New page
+slug: new-page
 ---
 
 Write here...
 \`;
-
-async function load() {
-  if (location.pathname === "/new") {
-    document.getElementById("md").value =
-      tpl(crypto.randomUUID(), "New page", "new-page");
     return;
   }
 
@@ -215,31 +180,24 @@ export default {
       if (p.startsWith("/edit/")) return html(EDITOR);
       if (p.startsWith("/") && !p.startsWith("/_")) return html(VIEW);
 
-      // API LIST
+      // API
       if (p === "/_list") {
         return new Response(JSON.stringify(await list(env)), {
           headers: { "Content-Type": "application/json" }
         });
       }
 
-      // API GET
       if (p.startsWith("/_get/")) {
         const slug = p.split("/").pop();
         const md = await get(env, slug);
 
-        if (!md) {
-          return new Response(JSON.stringify({ error: "not found" }), {
-            status: 404,
-            headers: { "Content-Type": "application/json" }
-          });
-        }
+        if (!md) return new Response("{}", { status: 404 });
 
         return new Response(JSON.stringify(parse(md)), {
           headers: { "Content-Type": "application/json" }
         });
       }
 
-      // SAVE
       if (p === "/_save") {
         const body = await req.json();
         await put(env, body.slug, body.content);
