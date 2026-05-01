@@ -1,8 +1,58 @@
 // =========================================================
+// ================= CSS ENGINE ============================
+// =========================================================
+function baseCSS() {
+  return `
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 20px;
+  line-height: 1.6;
+  background: #fff;
+  color: #000;
+  margin: 0;
+  padding: 40px;
+}
+
+a {
+  color: #1a73e8;
+  text-decoration: underline;
+}
+
+a:hover {
+  color: #1558b0;
+}
+
+button {
+  font: inherit;
+  border: 1px solid #000;
+  background: #fff;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+pre, textarea {
+  font-family: monospace;
+  font-size: 16px;
+}
+`;
+}
+
+// =========================================================
 // ================= HTML WRAPPER ==========================
 // =========================================================
 function html(c) {
-  return new Response(c, {
+  return new Response(`
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>${baseCSS()}</style>
+</head>
+<body>
+${c}
+</body>
+</html>
+`, {
     headers: { "Content-Type": "text/html; charset=utf-8" }
   });
 }
@@ -22,7 +72,7 @@ async function getIndex(env) {
 }
 
 async function saveIndex(env, index) {
-  await env.PAGES.put(INDEX_KEY, JSON.stringify(index));
+  await env.PAGES.put(INDEX_KEY, JSON.stringify(index || [], null, 2));
 }
 
 // =========================================================
@@ -60,7 +110,7 @@ async function putFile(env, slug, content) {
 }
 
 // =========================================================
-// ================= SAVE (FILE + INDEX) ==================
+// ================= SAVE PAGE =============================
 // =========================================================
 async function savePage(env, slug, content) {
   await putFile(env, slug, content);
@@ -82,21 +132,17 @@ async function savePage(env, slug, content) {
 }
 
 // =========================================================
-// ================= API: LIST =============================
+// ================= API LIST ==============================
 // =========================================================
 async function list(env) {
-  return await getIndex(env);
+  const index = await getIndex(env);
+  return Array.isArray(index) ? index : [];
 }
 
 // =========================================================
 // ================= INDEX PAGE ============================
 // =========================================================
 const INDEX = `
-<!doctype html>
-<html>
-<link rel="stylesheet" href="/styles/base.css">
-<body>
-
 <h1>Topics</h1>
 <a href="/new">+ New</a>
 
@@ -116,9 +162,8 @@ fetch("/_list")
 
   items.forEach(p => {
     const a = document.createElement("a");
-
     a.href = "/edit/" + p.slug;
-    a.textContent = p.title;
+    a.textContent = p.title || p.slug;
 
     el.appendChild(a);
     el.appendChild(document.createElement("br"));
@@ -128,16 +173,12 @@ fetch("/_list")
   document.getElementById("list").innerHTML = "error loading index";
 });
 </script>
-
-</body>
-</html>
 `;
 
 // =========================================================
-// ================= VIEW ================================
+// ================= VIEW PAGE =============================
 // =========================================================
 const VIEW = `
-<link rel="stylesheet" href="/styles/base.css">
 <a href="/">back</a>
 <button id="edit">edit</button>
 
@@ -145,7 +186,7 @@ const VIEW = `
 <pre id="c"></pre>
 
 <script>
-const slug = location.pathname.slice(1);
+const slug = location.pathname.split("/").filter(Boolean).pop();
 
 fetch("/_get/" + slug)
 .then(r => r.json())
@@ -163,14 +204,13 @@ fetch("/_get/" + slug)
 // ================= EDITOR ================================
 // =========================================================
 const EDITOR = `
-<link rel="stylesheet" href="/styles/base.css">
 <a href="/">back</a>
 <button onclick="save()">save</button>
 
 <textarea id="md" style="width:100%;height:90vh;"></textarea>
 
 <script>
-const slug = location.pathname.split("/").pop();
+const slug = location.pathname.split("/").filter(Boolean).pop();
 
 const tpl = (id, title, slug) => \`---
 id: \${id}
@@ -193,12 +233,12 @@ async function load() {
 
   document.getElementById("md").value =
 \`---
-id: \${d.id}
-title: \${d.title}
+id: \${d.id || crypto.randomUUID()}
+title: \${d.title || slug}
 slug: \${slug}
 ---
 
-\${d.content}\`;
+\${d.content || ""}\`;
 }
 
 async function save() {
@@ -234,20 +274,13 @@ export default {
 
     try {
 
-      // UI
-      if (p === "/") return html(INDEX);
-      if (p === "/new") return html(EDITOR);
-      if (p.startsWith("/edit/")) return html(EDITOR);
-      if (p.startsWith("/") && !p.startsWith("/_")) return html(VIEW);
-
-      // API LIST (FAST INDEX)
+      // ---------------- API ----------------
       if (p === "/_list") {
         return new Response(JSON.stringify(await list(env)), {
           headers: { "Content-Type": "application/json" }
         });
       }
 
-      // API GET FILE
       if (p.startsWith("/_get/")) {
         const slug = p.split("/").pop();
         const md = await getFile(env, slug);
@@ -264,12 +297,17 @@ export default {
         });
       }
 
-      // SAVE
       if (p === "/_save") {
         const body = await req.json();
         await savePage(env, body.slug, body.content);
         return new Response("ok");
       }
+
+      // ---------------- UI ----------------
+      if (p === "/") return html(INDEX);
+      if (p === "/new") return html(EDITOR);
+      if (p.startsWith("/edit/")) return html(EDITOR);
+      if (p.startsWith("/") && !p.startsWith("/_")) return html(VIEW);
 
       return new Response("404", { status: 404 });
 
