@@ -34,7 +34,7 @@ function parse(md = "") {
 // =========================================================
 const file = (slug) => slug + ".md";
 
-async function get(env, slug) {
+async function getRaw(env, slug) {
   const obj = await env.PAGES.get(file(slug));
   return obj ? await obj.text() : null;
 }
@@ -44,7 +44,7 @@ async function put(env, slug, content) {
 }
 
 // =========================================================
-// INDEX API (KEY FIX)
+// LIST (SAFE VERSION)
 // =========================================================
 async function list(env) {
   const res = await env.PAGES.list();
@@ -54,14 +54,16 @@ async function list(env) {
   for (const k of res.keys) {
     if (!k.name.endsWith(".md")) continue;
 
-    const raw = await get(env, k.name.replace(".md", ""));
+    const slug = k.name.replace(".md", "");
+
+    const raw = await getRaw(env, slug);
     if (!raw) continue;
 
     const p = parse(raw);
 
     pages.push({
-      slug: k.name.replace(".md", ""),
-      title: p.title || k.name.replace(".md", "")
+      slug,
+      title: p.title || slug
     });
   }
 
@@ -69,7 +71,7 @@ async function list(env) {
 }
 
 // =========================================================
-// INDEX UI
+// INDEX
 // =========================================================
 const INDEX = `
 <!doctype html>
@@ -96,7 +98,7 @@ fetch("/_list")
   pages.forEach(p => {
     const a = document.createElement("a");
     a.href = "/" + p.slug;
-    a.textContent = p.title;   // ✅ FIX: TITLE INSTEAD OF SLUG
+    a.textContent = p.title;
 
     el.appendChild(a);
     el.appendChild(document.createElement("br"));
@@ -112,7 +114,7 @@ fetch("/_list")
 `;
 
 // =========================================================
-// VIEW PAGE
+// VIEW
 // =========================================================
 const VIEW = `
 <a href="/">back</a>
@@ -148,7 +150,8 @@ const EDITOR = `
 <script>
 const slug = location.pathname.split("/").pop();
 
-const tpl = () => \`---
+function tpl() {
+  return \`---
 id: \${crypto.randomUUID()}
 title: New page
 slug: new-page
@@ -156,6 +159,7 @@ slug: new-page
 
 Write here...
 \`;
+}
 
 async function load() {
   if (location.pathname === "/new") {
@@ -224,10 +228,13 @@ export default {
 
       if (p.startsWith("/_get/")) {
         const slug = p.split("/").pop();
-        const md = await get(env, slug);
+        const md = await getRaw(env, slug);
 
         if (!md) {
-          return new Response(JSON.stringify({ error: "not found" }), { status: 404 });
+          return new Response(JSON.stringify({ error: "not found" }), {
+            status: 404,
+            headers: { "Content-Type": "application/json" }
+          });
         }
 
         return new Response(JSON.stringify(parse(md)), {
