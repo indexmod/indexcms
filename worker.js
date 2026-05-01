@@ -1,5 +1,3 @@
-
-// ================= JSON =================
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -7,98 +5,34 @@ function json(data, status = 200) {
   });
 }
 
-// ================= HTML =================
-function html(html) {
-  return new Response(html, {
+function html(content) {
+  return new Response(content, {
     headers: { "Content-Type": "text/html; charset=utf-8" }
   });
 }
 
-// ================= PARSER =================
-function parseMD(raw = "") {
-  const match = raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-
-  if (!match) {
-    return { title: "", slug: "", content: raw };
-  }
-
-  const fm = match[1];
-  const content = match[2];
-
-  const data = {};
-
-  fm.split("\n").forEach(line => {
-    const i = line.indexOf(":");
-    if (i === -1) return;
-
-    const key = line.slice(0, i).trim();
-    const value = line.slice(i + 1).trim();
-
-    data[key] = value;
-  });
-
-  return {
-    title: data.title || "",
-    slug: data.slug || "",
-    id: data.id || "",
-    content
-  };
+// ================= LIST FILES =================
+async function list(env) {
+  const res = await env.PAGES.list();
+  const files = res.keys.map(k => k.name).filter(n => n.endsWith(".md"));
+  files.sort();
+  return json(files);
 }
 
-// ================= SAVE =================
-async function savePage(req, env) {
+// ================= GET FILE =================
+async function get(env, name) {
+  const file = await env.PAGES.get(name);
+  if (!file) return json({ error: "not found" }, 404);
+  return json({ name, content: await file.text() });
+}
+
+// ================= SAVE FILE =================
+async function save(req, env) {
   const data = await req.json();
+  if (!data.name) return json({ error: "no name" }, 400);
 
-  if (!data.slug) return json({ error: "no slug" }, 400);
-
-  const md = `---
-id: ${data.id || crypto.randomUUID()}
-title: ${data.title || ""}
-slug: ${data.slug || ""}
----
-
-${data.content || ""}
-`;
-
-  await env.PAGES.put(`${data.slug}.md`, md);
-
+  await env.PAGES.put(data.name, data.content || "");
   return json({ ok: true });
-}
-
-// ================= GET =================
-async function getPage(env, slug) {
-  const raw = await env.PAGES.get(`${slug}.md`);
-
-  if (!raw) return json({ error: "not found" }, 404);
-
-  const text = await raw.text();
-  return json(parseMD(text));
-}
-
-// ================= LIST =================
-async function listPages(env) {
-  const list = await env.PAGES.list();
-
-  const pages = [];
-
-  for (const k of list.keys) {
-    if (!k.name.endsWith(".md")) continue;
-
-    const obj = await env.PAGES.get(k.name);
-    if (!obj) continue;
-
-    const text = await obj.text();
-    const p = parseMD(text);
-
-    pages.push({
-      title: p.title || k.name,
-      slug: p.slug || k.name.replace(".md", "")
-    });
-  }
-
-  pages.sort((a, b) => a.title.localeCompare(b.title));
-
-  return json(pages);
 }
 
 // ================= INDEX =================
@@ -107,131 +41,79 @@ const INDEX = `
 <html>
 <body>
 
-<h1>Pages</h1>
-<button onclick="location.href='/editor'">+ New</button>
+<h1>Files</h1>
+<button onclick="newFile()">+ New</button>
 
 <div id="list">loading...</div>
 
 <script>
-fetch('/api/pages')
-.then(r => r.json())
-.then(p => {
-  const el = document.getElementById('list');
-  el.innerHTML = '';
+function load() {
+  fetch('/api/list')
+    .then(r => r.json())
+    .then(files => {
+      const el = document.getElementById('list');
+      el.innerHTML = '';
 
-  p.forEach(x => {
-    const a = document.createElement('a');
-    a.href = '/page/' + x.slug;
-    a.textContent = x.title;
-    el.appendChild(a);
-    el.appendChild(document.createElement('br'));
-  });
-});
+      files.forEach(f => {
+        const a = document.createElement('a');
+        a.href = '/file/' + f;
+        a.textContent = f;
+        el.appendChild(a);
+        el.appendChild(document.createElement('br'));
+      });
+    });
+}
+
+function newFile() {
+  const name = prompt("filename", "page.md");
+  if (!name) return;
+  location.href = '/file/' + name;
+}
+
+load();
 </script>
 
 </body>
 </html>
 `;
 
-// ================= PAGE =================
-const PAGE = `
-<!doctype html>
-<html>
-<body>
-
-<a href="/">back</a>
-<button id="edit">edit</button>
-
-<h1 id="title"></h1>
-<pre id="content"></pre>
-
-<script>
-const slug = location.pathname.split('/').pop();
-
-fetch('/api/page/' + slug)
-.then(r => r.json())
-.then(d => {
-
-  document.getElementById('title').textContent = d.title;
-
-  document.getElementById('content').textContent =
-`---\nid: ${d.id}\ntitle: ${d.title}\nslug: ${d.slug}\n---\n\n${d.content}`;
-
-  document.getElementById('edit').onclick = () => {
-    location.href = '/editor?slug=' + slug;
-  };
-});
-</script>
-
-</body>
-</html>
-`;
-
-// ================= EDITOR (AUTO TEMPLATE) =================
+// ================= EDITOR =================
 const EDITOR = `
 <!doctype html>
 <html>
 <body>
 
-<h2>Editor</h2>
+<a href="/">back</a>
+<button onclick="save()">save</button>
 
-<textarea id="md" style="width:100%;height:400px;"></textarea>
-<br>
-<button onclick="save()">Save</button>
+<h3 id="name"></h3>
+<textarea id="t" style="width:100%;height:80vh;"></textarea>
 
 <script>
-const md = document.getElementById('md');
-const slug = new URLSearchParams(location.search).get('slug');
+const name = location.pathname.split('/').pop();
 
-// ===== NEW PAGE TEMPLATE =====
-function newTemplate() {
-  const id = crypto.randomUUID();
+document.getElementById('name').textContent = name;
 
-  return \`---
-id: \${id}
-title: New page
-slug: new-page
----
-
-Write content here...
-\`;
+function load() {
+  fetch('/api/file/' + name)
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById('t').value = d.content || '';
+    });
 }
 
-// ===== LOAD EXISTING =====
-if (slug) {
-  fetch('/api/page/' + slug)
-  .then(r => r.json())
-  .then(d => {
-    md.value =
-\`---
-id: \${d.id}
-title: \${d.title}
-slug: \${d.slug}
----
-
-\${d.content}\`;
-  });
-} else {
-  md.value = newTemplate();
-}
-
-// ===== SAVE =====
 function save() {
-  const id = (md.value.match(/id:\\s*(.*)/)?.[1] || '').trim();
-  const title = (md.value.match(/title:\\s*(.*)/)?.[1] || '').trim();
-  const slug = (md.value.match(/slug:\\s*(.*)/)?.[1] || '').trim();
-
   fetch('/api/save', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
-      id,
-      title,
-      slug,
-      content: md.value
+      name,
+      content: document.getElementById('t').value
     })
-  }).then(() => location.href = '/');
+  }).then(() => alert('saved'));
 }
+
+load();
 </script>
 
 </body>
@@ -246,18 +128,18 @@ export default {
 
     try {
 
-      if (path === "/api/save") return savePage(req, env);
+      if (path === "/api/list") return list(env);
 
-      if (path.startsWith("/api/page/")) {
-        const slug = decodeURIComponent(path.split("/").pop());
-        return getPage(env, slug);
+      if (path.startsWith("/api/file/")) {
+        const name = decodeURIComponent(path.split("/").pop());
+        return get(env, name);
       }
 
-      if (path === "/api/pages") return listPages(env);
+      if (path === "/api/save") return save(req, env);
 
       if (path === "/") return html(INDEX);
-      if (path === "/editor") return html(EDITOR);
-      if (path.startsWith("/page/")) return html(PAGE);
+
+      if (path.startsWith("/file/")) return html(EDITOR);
 
       return new Response("404", { status: 404 });
 
