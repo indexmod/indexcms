@@ -1,4 +1,5 @@
-// ================= SAFE JSON =================
+
+// ================= JSON =================
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -7,7 +8,7 @@ function json(data, status = 200) {
 }
 
 // ================= HTML =================
-function htmlPage(html) {
+function html(html) {
   return new Response(html, {
     headers: { "Content-Type": "text/html; charset=utf-8" }
   });
@@ -27,11 +28,11 @@ function parseMD(raw = "") {
   const data = {};
 
   fm.split("\n").forEach(line => {
-    const idx = line.indexOf(":");
-    if (idx === -1) return;
+    const i = line.indexOf(":");
+    if (i === -1) return;
 
-    const key = line.slice(0, idx).trim();
-    const value = line.slice(idx + 1).trim();
+    const key = line.slice(0, i).trim();
+    const value = line.slice(i + 1).trim();
 
     data[key] = value;
   });
@@ -39,6 +40,7 @@ function parseMD(raw = "") {
   return {
     title: data.title || "",
     slug: data.slug || "",
+    id: data.id || "",
     content
   };
 }
@@ -50,9 +52,9 @@ async function savePage(req, env) {
   if (!data.slug) return json({ error: "no slug" }, 400);
 
   const md = `---
-id: ${crypto.randomUUID()}
+id: ${data.id || crypto.randomUUID()}
 title: ${data.title || ""}
-slug: ${data.slug}
+slug: ${data.slug || ""}
 ---
 
 ${data.content || ""}
@@ -63,76 +65,64 @@ ${data.content || ""}
   return json({ ok: true });
 }
 
-// ================= GET PAGE =================
+// ================= GET =================
 async function getPage(env, slug) {
   const raw = await env.PAGES.get(`${slug}.md`);
 
   if (!raw) return json({ error: "not found" }, 404);
 
   const text = await raw.text();
-  const parsed = parseMD(text);
-
-  return json(parsed);
+  return json(parseMD(text));
 }
 
-// ================= LIST (SAFE, NO CRASH) =================
+// ================= LIST =================
 async function listPages(env) {
-  try {
-    const list = await env.PAGES.list();
+  const list = await env.PAGES.list();
 
-    const keys = list?.keys || [];
+  const pages = [];
 
-    const pages = [];
+  for (const k of list.keys) {
+    if (!k.name.endsWith(".md")) continue;
 
-    for (const k of keys) {
-      if (!k?.name) continue;
+    const obj = await env.PAGES.get(k.name);
+    if (!obj) continue;
 
-      const obj = await env.PAGES.get(k.name);
-      if (!obj) continue;
+    const text = await obj.text();
+    const p = parseMD(text);
 
-      const text = await obj.text();
-      const p = parseMD(text);
-
-      if (p.slug) {
-        pages.push({
-          title: p.title,
-          slug: p.slug
-        });
-      }
-    }
-
-    return json(pages);
-  } catch (e) {
-    return json({
-      error: "list crash",
-      message: e.message
-    }, 500);
+    pages.push({
+      title: p.title || k.name,
+      slug: p.slug || k.name.replace(".md", "")
+    });
   }
+
+  pages.sort((a, b) => a.title.localeCompare(b.title));
+
+  return json(pages);
 }
 
-// ================= HTML UI =================
-const INDEX_HTML = `
+// ================= INDEX =================
+const INDEX = `
 <!doctype html>
 <html>
-<head><meta charset="utf-8"><title>IndexCMS</title></head>
 <body>
 
 <h1>Pages</h1>
-<button onclick="location.href='/editor'">+ New Page</button>
+<button onclick="location.href='/editor'">+ New</button>
 
 <div id="list">loading...</div>
 
 <script>
 fetch('/api/pages')
 .then(r => r.json())
-.then(pages => {
+.then(p => {
   const el = document.getElementById('list');
-  el.innerHTML = "";
+  el.innerHTML = '';
 
-  pages.forEach(p => {
+  p.forEach(x => {
     const a = document.createElement('a');
-    a.href = '/page/' + p.slug;
-    a.textContent = p.title || p.slug;
+    a.href = '/page/' + x.slug;
+    a.textContent = x.title;
     el.appendChild(a);
     el.appendChild(document.createElement('br'));
   });
@@ -143,29 +133,33 @@ fetch('/api/pages')
 </html>
 `;
 
-const PAGE_HTML = `
+// ================= PAGE =================
+const PAGE = `
 <!doctype html>
 <html>
-<head>
-<meta charset="utf-8">
-<title>Page</title>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-</head>
 <body>
 
-<a href="/">← back</a>
+<a href="/">back</a>
+<button id="edit">edit</button>
+
 <h1 id="title"></h1>
-<div id="content"></div>
+<pre id="content"></pre>
 
 <script>
-const slug = location.pathname.split("/").pop();
+const slug = location.pathname.split('/').pop();
 
 fetch('/api/page/' + slug)
 .then(r => r.json())
-.then(data => {
-  document.getElementById('title').textContent = data.title;
-  document.getElementById('content').innerHTML =
-    marked.parse(data.content || "");
+.then(d => {
+
+  document.getElementById('title').textContent = d.title;
+
+  document.getElementById('content').textContent =
+`---\nid: ${d.id}\ntitle: ${d.title}\nslug: ${d.slug}\n---\n\n${d.content}`;
+
+  document.getElementById('edit').onclick = () => {
+    location.href = '/editor?slug=' + slug;
+  };
 });
 </script>
 
@@ -173,38 +167,70 @@ fetch('/api/page/' + slug)
 </html>
 `;
 
-const EDITOR_HTML = `
+// ================= EDITOR (AUTO TEMPLATE) =================
+const EDITOR = `
 <!doctype html>
 <html>
-<head>
-<meta charset="utf-8">
-<title>Editor</title>
-</head>
 <body>
 
 <h2>Editor</h2>
 
-<input id="title" placeholder="title"><br>
-<input id="slug" placeholder="slug"><br>
-
-<textarea id="md" style="width:100%;height:300px;"></textarea>
-
+<textarea id="md" style="width:100%;height:400px;"></textarea>
 <br>
 <button onclick="save()">Save</button>
 
 <script>
+const md = document.getElementById('md');
+const slug = new URLSearchParams(location.search).get('slug');
+
+// ===== NEW PAGE TEMPLATE =====
+function newTemplate() {
+  const id = crypto.randomUUID();
+
+  return \`---
+id: \${id}
+title: New page
+slug: new-page
+---
+
+Write content here...
+\`;
+}
+
+// ===== LOAD EXISTING =====
+if (slug) {
+  fetch('/api/page/' + slug)
+  .then(r => r.json())
+  .then(d => {
+    md.value =
+\`---
+id: \${d.id}
+title: \${d.title}
+slug: \${d.slug}
+---
+
+\${d.content}\`;
+  });
+} else {
+  md.value = newTemplate();
+}
+
+// ===== SAVE =====
 function save() {
+  const id = (md.value.match(/id:\\s*(.*)/)?.[1] || '').trim();
+  const title = (md.value.match(/title:\\s*(.*)/)?.[1] || '').trim();
+  const slug = (md.value.match(/slug:\\s*(.*)/)?.[1] || '').trim();
+
   fetch('/api/save', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
-      title: document.getElementById('title').value,
-      slug: document.getElementById('slug').value,
-      content: document.getElementById('md').value
+      id,
+      title,
+      slug,
+      content: md.value
     })
-  }).then(() => {
-    location.href = '/';
-  });
+  }).then(() => location.href = '/');
 }
 </script>
 
@@ -219,7 +245,7 @@ export default {
     const path = url.pathname;
 
     try {
-      // API
+
       if (path === "/api/save") return savePage(req, env);
 
       if (path.startsWith("/api/page/")) {
@@ -229,15 +255,14 @@ export default {
 
       if (path === "/api/pages") return listPages(env);
 
-      // UI
-      if (path === "/") return htmlPage(INDEX_HTML);
-      if (path === "/editor") return htmlPage(EDITOR_HTML);
-      if (path.startsWith("/page/")) return htmlPage(PAGE_HTML);
+      if (path === "/") return html(INDEX);
+      if (path === "/editor") return html(EDITOR);
+      if (path.startsWith("/page/")) return html(PAGE);
 
-      return new Response("Not found", { status: 404 });
+      return new Response("404", { status: 404 });
 
     } catch (e) {
-      return json({ error: "fatal", message: e.message }, 500);
+      return json({ error: e.message }, 500);
     }
   }
 };
