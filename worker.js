@@ -8,68 +8,95 @@ function html(c) {
 }
 
 // =========================================================
-// R2 FILE NAME
+// FRONTMATTER PARSER
+// =========================================================
+function parse(md = "") {
+  const m = md.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+  if (!m) return { title: "", slug: "", content: md };
+
+  const fm = {};
+  m[1].split("\n").forEach(l => {
+    const i = l.indexOf(":");
+    if (i === -1) return;
+    fm[l.slice(0, i).trim()] = l.slice(i + 1).trim();
+  });
+
+  return {
+    id: fm.id || "",
+    title: fm.title || "",
+    slug: fm.slug || "",
+    content: m[2]
+  };
+}
+
+// =========================================================
+// R2 HELPERS
 // =========================================================
 const file = (slug) => slug + ".md";
 
-// =========================================================
-// LOAD PAGE
-// =========================================================
 async function get(env, slug) {
   const obj = await env.PAGES.get(file(slug));
   return obj ? await obj.text() : null;
 }
 
-// =========================================================
-// SAVE PAGE + INDEX UPDATE
-// =========================================================
-async function save(env, slug, content) {
+async function put(env, slug, content) {
   await env.PAGES.put(file(slug), content);
-
-  let idx = await env.PAGES.get("index.json");
-  idx = idx ? await idx.json() : [];
-
-  if (!idx.includes(slug)) {
-    idx.push(slug);
-  }
-
-  await env.PAGES.put("index.json", JSON.stringify(idx));
-
-  return idx;
 }
 
 // =========================================================
-// LIST PAGES
+// INDEX API (KEY FIX)
 // =========================================================
 async function list(env) {
-  const idx = await env.PAGES.get("index.json");
-  return idx ? await idx.json() : [];
+  const res = await env.PAGES.list();
+
+  const pages = [];
+
+  for (const k of res.keys) {
+    if (!k.name.endsWith(".md")) continue;
+
+    const raw = await get(env, k.name.replace(".md", ""));
+    if (!raw) continue;
+
+    const p = parse(raw);
+
+    pages.push({
+      slug: k.name.replace(".md", ""),
+      title: p.title || k.name.replace(".md", "")
+    });
+  }
+
+  return pages;
 }
 
 // =========================================================
-// INDEX PAGE
+// INDEX UI
 // =========================================================
 const INDEX = `
+<!doctype html>
+<html>
+<body>
+
 <h1>Topics</h1>
 <a href="/new">+ New</a>
+
 <div id="list">loading...</div>
 
 <script>
 fetch("/_list")
 .then(r => r.json())
-.then(list => {
+.then(pages => {
   const el = document.getElementById("list");
   el.innerHTML = "";
 
-  if (!list.length) {
+  if (!pages.length) {
     el.innerHTML = "no pages yet";
     return;
   }
 
-  list.forEach(slug => {
+  pages.forEach(p => {
     const a = document.createElement("a");
-    a.href = "/" + slug;
-    a.textContent = slug;
+    a.href = "/" + p.slug;
+    a.textContent = p.title;   // ✅ FIX: TITLE INSTEAD OF SLUG
 
     el.appendChild(a);
     el.appendChild(document.createElement("br"));
@@ -79,6 +106,9 @@ fetch("/_list")
   document.getElementById("list").innerHTML = "error loading index";
 });
 </script>
+
+</body>
+</html>
 `;
 
 // =========================================================
@@ -95,12 +125,10 @@ const VIEW = `
 const slug = location.pathname.slice(1);
 
 fetch("/_get/" + slug)
-.then(r => r.text())
-.then(md => {
-  document.getElementById("c").textContent = md;
-
-  const title = (md.match(/title:\\s*(.*)/)?.[1] || slug);
-  document.getElementById("t").textContent = title;
+.then(r => r.json())
+.then(d => {
+  document.getElementById("t").innerText = d.title || slug;
+  document.getElementById("c").innerText = d.content || "";
 
   document.getElementById("edit").onclick = () =>
     location.href = "/edit/" + slug;
@@ -120,39 +148,43 @@ const EDITOR = `
 <script>
 const slug = location.pathname.split("/").pop();
 
-function tpl(id, title, slug) {
-  return \`---
-id: \${id}
-title: \${title}
-slug: \${slug}
+const tpl = () => \`---
+id: \${crypto.randomUUID()}
+title: New page
+slug: new-page
 ---
 
 Write here...
 \`;
-}
 
 async function load() {
   if (location.pathname === "/new") {
-    document.getElementById("md").value =
-      tpl(crypto.randomUUID(), "New page", "new-page");
+    document.getElementById("md").value = tpl();
     return;
   }
 
-  const md = await fetch("/_get/" + slug).then(r => r.text());
+  const r = await fetch("/_get/" + slug);
+  const d = await r.json();
 
-  document.getElementById("md").value = md;
+  document.getElementById("md").value =
+\`---
+id: \${d.id}
+title: \${d.title}
+slug: \${slug}
+---
+
+\${d.content}\`;
 }
 
 async function save() {
   const md = document.getElementById("md").value;
 
-  let slug =
+  const slug =
     (md.match(/slug:\\s*(.*)/)?.[1] || "")
       .trim()
       .toLowerCase()
-      .replace(/[^a-z0-9-]/g, "-");
-
-  if (!slug) slug = "untitled";
+      .replace(/[^a-z0-9-]/g, "-")
+      || "untitled";
 
   await fetch("/_save", {
     method: "POST",
@@ -183,29 +215,29 @@ export default {
       if (p.startsWith("/edit/")) return html(EDITOR);
       if (p.startsWith("/") && !p.startsWith("/_")) return html(VIEW);
 
-      // API LIST
+      // API
       if (p === "/_list") {
         return new Response(JSON.stringify(await list(env)), {
           headers: { "Content-Type": "application/json" }
         });
       }
 
-      // API GET
       if (p.startsWith("/_get/")) {
         const slug = p.split("/").pop();
         const md = await get(env, slug);
 
         if (!md) {
-          return new Response("not found", { status: 404 });
+          return new Response(JSON.stringify({ error: "not found" }), { status: 404 });
         }
 
-        return new Response(md);
+        return new Response(JSON.stringify(parse(md)), {
+          headers: { "Content-Type": "application/json" }
+        });
       }
 
-      // API SAVE
       if (p === "/_save") {
         const body = await req.json();
-        await save(env, body.slug, body.content);
+        await put(env, body.slug, body.content);
         return new Response("ok");
       }
 
