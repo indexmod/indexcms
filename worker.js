@@ -94,6 +94,7 @@ async function list(env) {
 const INDEX = `
 <!doctype html>
 <html>
+<link rel="stylesheet" href="/styles/base.css">
 <body>
 
 <h1>Topics</h1>
@@ -136,6 +137,7 @@ fetch("/_list")
 // ================= VIEW ================================
 // =========================================================
 const VIEW = `
+<link rel="stylesheet" href="/styles/base.css">
 <a href="/">back</a>
 <button id="edit">edit</button>
 
@@ -161,6 +163,7 @@ fetch("/_get/" + slug)
 // ================= EDITOR ================================
 // =========================================================
 const EDITOR = `
+<link rel="stylesheet" href="/styles/base.css">
 <a href="/">back</a>
 <button onclick="save()">save</button>
 
