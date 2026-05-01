@@ -8,135 +8,77 @@ function html(c) {
 }
 
 // =========================================================
-// FRONTMATTER PARSER (SAFE)
+// R2 FILE NAME
 // =========================================================
-function parse(md = "") {
-  const m = md.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-
-  if (!m) {
-    return {
-      id: "",
-      title: "",
-      slug: "",
-      content: md
-    };
-  }
-
-  const fm = {};
-  m[1].split("\n").forEach(line => {
-    const i = line.indexOf(":");
-    if (i === -1) return;
-    fm[line.slice(0, i).trim()] = line.slice(i + 1).trim();
-  });
-
-  return {
-    id: fm.id || "",
-    title: fm.title || "",
-    slug: fm.slug || "",
-    content: m[2] || ""
-  };
-}
+const file = (slug) => slug + ".md";
 
 // =========================================================
-// STORAGE (R2)
+// LOAD PAGE
 // =========================================================
-const file = (slug) => `${slug}.md`;
-
 async function get(env, slug) {
-  try {
-    const obj = await env.PAGES.get(file(slug));
-    return obj ? await obj.text() : null;
-  } catch {
-    return null;
-  }
-}
-
-async function put(env, slug, content) {
-  await env.PAGES.put(file(slug), content);
+  const obj = await env.PAGES.get(file(slug));
+  return obj ? await obj.text() : null;
 }
 
 // =========================================================
-// LIST (MICRO COSTYLE - SAFE SCAN)
+// SAVE PAGE + INDEX UPDATE
+// =========================================================
+async function save(env, slug, content) {
+  await env.PAGES.put(file(slug), content);
+
+  let idx = await env.PAGES.get("index.json");
+  idx = idx ? await idx.json() : [];
+
+  if (!idx.includes(slug)) {
+    idx.push(slug);
+  }
+
+  await env.PAGES.put("index.json", JSON.stringify(idx));
+
+  return idx;
+}
+
+// =========================================================
+// LIST PAGES
 // =========================================================
 async function list(env) {
-  try {
-    const res = await env.PAGES.list();
-
-    const keys = res.keys || [];
-    const out = [];
-
-    for (const k of keys) {
-      if (!k.name.endsWith(".md")) continue;
-
-      try {
-        const obj = await env.PAGES.get(k.name);
-        if (!obj) continue;
-
-        const text = await obj.text();
-
-        const parsed = parse(text);
-
-        out.push({
-          slug: k.name.replace(".md", ""),
-          title: parsed.title || k.name.replace(".md", "")
-        });
-
-      } catch {
-        // ignore broken file
-      }
-    }
-
-    return out.sort((a, b) => a.title.localeCompare(b.title));
-  } catch {
-    return [];
-  }
+  const idx = await env.PAGES.get("index.json");
+  return idx ? await idx.json() : [];
 }
 
 // =========================================================
 // INDEX PAGE
 // =========================================================
 const INDEX = `
-<!doctype html>
-<html>
-<body>
-
 <h1>Topics</h1>
 <a href="/new">+ New</a>
-
 <div id="list">loading...</div>
 
 <script>
-async function load() {
-  try {
-    const r = await fetch("/_list");
-    const data = await r.json();
+fetch("/_list")
+.then(r => r.json())
+.then(list => {
+  const el = document.getElementById("list");
+  el.innerHTML = "";
 
-    const el = document.getElementById("list");
-    el.innerHTML = "";
-
-    if (!data.length) {
-      el.innerHTML = "no pages yet";
-      return;
-    }
-
-    data.forEach(p => {
-      const a = document.createElement("a");
-      a.href = "/" + p.slug;
-      a.textContent = p.title;
-      el.appendChild(a);
-      el.appendChild(document.createElement("br"));
-    });
-
-  } catch {
-    document.getElementById("list").innerHTML = "error loading index";
+  if (!list.length) {
+    el.innerHTML = "no pages yet";
+    return;
   }
-}
 
-load();
+  list.forEach(slug => {
+    const a = document.createElement("a");
+    a.href = "/" + slug;
+    a.textContent = slug;
+
+    el.appendChild(a);
+    el.appendChild(document.createElement("br"));
+  });
+})
+.catch(() => {
+  document.getElementById("list").innerHTML = "error loading index";
+});
 </script>
-
-</body>
-</html>
 `;
 
 // =========================================================
@@ -153,14 +95,15 @@ const VIEW = `
 const slug = location.pathname.slice(1);
 
 fetch("/_get/" + slug)
-.then(r => r.json())
-.then(d => {
-  document.getElementById("t").innerText = d.title || slug;
-  document.getElementById("c").innerText = d.content || "";
+.then(r => r.text())
+.then(md => {
+  document.getElementById("c").textContent = md;
 
-  document.getElementById("edit").onclick = () => {
+  const title = (md.match(/title:\\s*(.*)/)?.[1] || slug);
+  document.getElementById("t").textContent = title;
+
+  document.getElementById("edit").onclick = () =>
     location.href = "/edit/" + slug;
-  };
 });
 </script>
 `;
@@ -177,11 +120,11 @@ const EDITOR = `
 <script>
 const slug = location.pathname.split("/").pop();
 
-function template() {
+function tpl(id, title, slug) {
   return \`---
-id: \${crypto.randomUUID()}
-title: New page
-slug: new-page
+id: \${id}
+title: \${title}
+slug: \${slug}
 ---
 
 Write here...
@@ -190,21 +133,14 @@ Write here...
 
 async function load() {
   if (location.pathname === "/new") {
-    document.getElementById("md").value = template();
+    document.getElementById("md").value =
+      tpl(crypto.randomUUID(), "New page", "new-page");
     return;
   }
 
-  const r = await fetch("/_get/" + slug);
-  const d = await r.json();
+  const md = await fetch("/_get/" + slug).then(r => r.text());
 
-  document.getElementById("md").value =
-\`---
-id: \${d.id || crypto.randomUUID()}
-title: \${d.title || ""}
-slug: \${slug}
----
-
-\${d.content || ""}\`;
+  document.getElementById("md").value = md;
 }
 
 async function save() {
@@ -260,21 +196,16 @@ export default {
         const md = await get(env, slug);
 
         if (!md) {
-          return new Response(JSON.stringify({ error: "not found" }), {
-            status: 404,
-            headers: { "Content-Type": "application/json" }
-          });
+          return new Response("not found", { status: 404 });
         }
 
-        return new Response(JSON.stringify(parse(md)), {
-          headers: { "Content-Type": "application/json" }
-        });
+        return new Response(md);
       }
 
       // API SAVE
       if (p === "/_save") {
         const body = await req.json();
-        await put(env, body.slug, body.content);
+        await save(env, body.slug, body.content);
         return new Response("ok");
       }
 
