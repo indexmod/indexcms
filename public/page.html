@@ -19,12 +19,12 @@ fetch('/api/page/' + slug)
   document.getElementById('title').textContent = d.title;
 
   const fm =
-'---\\n' +
-'id: ' + (d.id || '') + '\\n' +
-'title: ' + (d.title || '') + '\\n' +
-'slug: ' + (d.slug || '') + '\\n' +
-'---\\n\\n' +
-(d.content || '');
+"---\\n" +
+"id: " + (d.id || "") + "\\n" +
+"title: " + (d.title || "") + "\\n" +
+"slug: " + (d.slug || "") + "\\n" +
+"---\\n\\n" +
+(d.content || "");
 
   document.getElementById('content').textContent = fm;
 
