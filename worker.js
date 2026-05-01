@@ -18,29 +18,44 @@ function html(content) {
 async function save(req, env) {
   const data = await req.json();
 
+  if (!data.name) {
+    return json({ error: "no name" }, 400);
+  }
+
   await env.PAGES.put(data.name, data.content || "");
 
   return json({ ok: true });
 }
 
-// ================= GET =================
-async function get(env, name) {
+// ================= GET FILE =================
+async function getFile(env, name) {
   const file = await env.PAGES.get(name);
-  return file ? file.text() : "";
+  if (!file) return "";
+
+  return await file.text();
 }
 
 // ================= LIST =================
 async function list(env) {
   const res = await env.PAGES.list();
-  return json(res.keys.map(k => k.name));
+
+  const files = res.keys
+    .map(k => k.name)
+    .filter(n => n.endsWith(".md") || n.endsWith(".txt"))
+    .sort();
+
+  return json(files);
 }
 
-// ================= INDEX =================
 const INDEX = `
 <!doctype html>
 <html>
 <body>
-<h1>Files</h1>
+
+<h1>Pages</h1>
+
+<button onclick="location.href='/file/new.md'">+ New</button>
+
 <div id="list">loading...</div>
 
 <script>
@@ -48,16 +63,18 @@ fetch('/api/list')
 .then(r => r.json())
 .then(files => {
   const el = document.getElementById('list');
+  el.innerHTML = '';
 
   files.forEach(f => {
     const a = document.createElement('a');
-    a.href = '/file/' + f;
+    a.href = '/view/' + encodeURIComponent(f);
     a.textContent = f;
     el.appendChild(a);
     el.appendChild(document.createElement('br'));
   });
 });
 </script>
+
 </body>
 </html>
 `;
@@ -74,7 +91,7 @@ const EDITOR = `
 <textarea id="md" style="width:100%;height:90vh;"></textarea>
 
 <script>
-const name = location.pathname.split('/').pop();
+const name = decodeURIComponent(location.pathname.split('/').pop());
 
 function template() {
   return \`---
@@ -88,7 +105,7 @@ Paste markdown here
 }
 
 async function load() {
-  const res = await fetch('/api/file/' + name);
+  const res = await fetch('/api/file/' + encodeURIComponent(name));
   const text = await res.text();
 
   document.getElementById('md').value = text || template();
@@ -103,12 +120,12 @@ function save() {
       content: document.getElementById('md').value
     })
   }).then(() => {
-    location.href = '/view/' + name;
+    location.href = '/view/' + encodeURIComponent(name);
   });
 }
 
 function view() {
-  location.href = '/view/' + name;
+  location.href = '/view/' + encodeURIComponent(name);
 }
 
 load();
@@ -133,15 +150,15 @@ const VIEW = `
 <div id="out"></div>
 
 <script>
-const name = location.pathname.split('/').pop();
+const name = decodeURIComponent(location.pathname.split('/').pop());
 
-fetch('/api/file/' + name)
+fetch('/api/file/' + encodeURIComponent(name))
 .then(r => r.text())
 .then(md => {
   document.getElementById('out').innerHTML = marked.parse(md);
 
   document.getElementById('edit').onclick = () => {
-    location.href = '/file/' + name;
+    location.href = '/file/' + encodeURIComponent(name);
   };
 });
 </script>
@@ -156,22 +173,31 @@ export default {
     const url = new URL(req.url);
     const path = url.pathname;
 
-    if (path === "/api/save") return save(req, env);
+    try {
 
-    if (path === "/api/list") return list(env);
+      // API
+      if (path === "/api/save") return save(req, env);
+      if (path === "/api/list") return list(env);
 
-    if (path.startsWith("/api/file/")) {
-      const name = decodeURIComponent(path.split("/").pop());
-      const file = await env.PAGES.get(name);
-      return new Response(await (file?.text() || ""));
+      if (path.startsWith("/api/file/")) {
+        const name = decodeURIComponent(path.split("/").pop());
+        const text = await getFile(env, name);
+        return new Response(text);
+      }
+
+      // UI
+      if (path === "/") return html(INDEX);
+
+      // EDITOR
+      if (path.startsWith("/file/")) return html(EDITOR);
+
+      // VIEW
+      if (path.startsWith("/view/")) return html(VIEW);
+
+      return new Response("404", { status: 404 });
+
+    } catch (e) {
+      return json({ error: e.message }, 500);
     }
-
-    if (path === "/") return html(INDEX);
-
-    if (path.startsWith("/file/")) return html(EDITOR);
-
-    if (path.startsWith("/view/")) return html(VIEW);
-
-    return new Response("404", { status: 404 });
   }
 };
