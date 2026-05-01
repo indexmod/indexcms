@@ -1,4 +1,4 @@
-// ================= JSON =================
+// ================= UTILS =================
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -6,14 +6,13 @@ function json(data, status = 200) {
   });
 }
 
-// ================= HTML =================
 function html(content) {
   return new Response(content, {
     headers: { "Content-Type": "text/html; charset=utf-8" }
   });
 }
 
-// ================= PARSE FRONTMATTER =================
+// ================= PARSE =================
 function parse(raw = "") {
   const match = raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
 
@@ -43,21 +42,29 @@ function parse(raw = "") {
   };
 }
 
+// ================= STORAGE =================
+async function getFile(env, name) {
+  const f = await env.PAGES.get(name);
+  return f ? await f.text() : "";
+}
+
 // ================= SAVE =================
 async function save(req, env) {
   const data = await req.json();
 
-  if (!data.name) return json({ error: "no name" }, 400);
+  let name = data.name;
+  let content = data.content;
 
-  await env.PAGES.put(data.name, data.content);
+  if (!name) return json({ error: "no name" }, 400);
 
-  return json({ ok: true });
-}
+  // если новый файл → генерим uuid
+  if (name === "__new__") {
+    name = crypto.randomUUID() + ".md";
+  }
 
-// ================= GET FILE =================
-async function getFile(env, name) {
-  const f = await env.PAGES.get(name);
-  return f ? await f.text() : "";
+  await env.PAGES.put(name, content);
+
+  return json({ ok: true, name });
 }
 
 // ================= FIND BY PERMALINK =================
@@ -66,6 +73,7 @@ async function findByPermalink(env, permalink) {
 
   for (const k of list.keys) {
     if (!k.name.endsWith(".md")) continue;
+    if (k.name === "template.md") continue;
 
     const raw = await getFile(env, k.name);
     const p = parse(raw);
@@ -86,13 +94,14 @@ async function list(env) {
 
   for (const k of res.keys) {
     if (!k.name.endsWith(".md")) continue;
+    if (k.name === "template.md") continue;
 
     const raw = await getFile(env, k.name);
     const p = parse(raw);
 
     pages.push({
       title: p.title || k.name,
-      permalink: p.permalink || k.name.replace(".md", "")
+      permalink: p.permalink || ""
     });
   }
 
@@ -120,6 +129,8 @@ fetch('/api/list')
   el.innerHTML = '';
 
   pages.forEach(p => {
+    if (!p.permalink) return;
+
     const a = document.createElement('a');
     a.href = '/' + p.permalink;
     a.textContent = p.title;
@@ -140,52 +151,58 @@ const EDITOR = `
 <body>
 
 <button onclick="save()">Save</button>
-<button onclick="view()">View</button>
 
 <textarea id="md" style="width:100%;height:90vh;"></textarea>
 
 <script>
 let name = location.pathname.split('/').pop();
 
-if (name === "__new__") {
-  name = crypto.randomUUID() + ".md";
-}
-
-function template() {
-  return \`---
-title: New page
-permalink: new-page
----
-
-Write here...
-\`;
-}
-
+// ===== LOAD =====
 async function load() {
+
+  // новый файл → загружаем template.md
+  if (name === "__new__") {
+    const res = await fetch('/api/file/template.md');
+    const tpl = await res.text();
+    document.getElementById('md').value = tpl;
+    return;
+  }
+
   const res = await fetch('/api/file/' + encodeURIComponent(name));
   const text = await res.text();
 
-  document.getElementById('md').value = text || template();
+  document.getElementById('md').value = text;
 }
 
+// ===== SAVE =====
 function save() {
+  let md = document.getElementById('md').value;
+
+  let permalink = (md.match(/permalink:\\s*(.*)/)?.[1] || "").trim();
+
+  // если нет permalink → генерим
+  if (!permalink) {
+    const title = (md.match(/title:\\s*(.*)/)?.[1] || "").trim();
+
+    permalink = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+
+    md = md.replace(/permalink:\\s*(.*)/, "permalink: " + permalink);
+  }
+
   fetch('/api/save', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
       name,
-      content: document.getElementById('md').value
+      content: md
     })
-  }).then(() => {
-    view();
+  })
+  .then(() => {
+    location.href = '/' + permalink;
   });
-}
-
-function view() {
-  const md = document.getElementById('md').value;
-  const permalink = (md.match(/permalink:\\s*(.*)/)?.[1] || "").trim();
-
-  location.href = '/' + permalink;
 }
 
 load();
@@ -260,7 +277,7 @@ export default {
       if (path === "/") return html(INDEX);
       if (path.startsWith("/file/")) return html(EDITOR);
 
-      // permalink routing
+      // permalink route
       return html(VIEW);
 
     } catch (e) {
