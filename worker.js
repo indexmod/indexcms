@@ -1,5 +1,5 @@
 // =========================================================
-// ================= HTML WRAPPER ==========================
+// HTML WRAPPER
 // =========================================================
 function html(c) {
   return new Response(c, {
@@ -8,35 +8,44 @@ function html(c) {
 }
 
 // =========================================================
-// ================= MD PARSER =============================
+// SAFE FRONTMATTER PARSER
 // =========================================================
 function parse(md = "") {
   const m = md.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-  if (!m) return { title: "", slug: "", content: md };
+
+  if (!m) {
+    return {
+      id: "",
+      title: "",
+      slug: "",
+      content: md
+    };
+  }
 
   const fm = {};
-  m[1].split("\n").forEach(l => {
-    const i = l.indexOf(":");
+  m[1].split("\n").forEach(line => {
+    const i = line.indexOf(":");
     if (i === -1) return;
-    fm[l.slice(0, i).trim()] = l.slice(i + 1).trim();
+    fm[line.slice(0, i).trim()] = line.slice(i + 1).trim();
   });
 
   return {
     id: fm.id || "",
     title: fm.title || "",
     slug: fm.slug || "",
-    content: m[2]
+    content: m[2] || ""
   };
 }
 
 // =========================================================
-// ================= R2 HELPERS ============================
+// STORAGE HELPERS (R2)
 // =========================================================
-const file = (slug) => slug + ".md";
+const file = (slug) => `${slug}.md`;
 
 async function get(env, slug) {
   const obj = await env.PAGES.get(file(slug));
-  return obj ? await obj.text() : null;
+  if (!obj) return null;
+  return await obj.text();
 }
 
 async function put(env, slug, content) {
@@ -44,18 +53,21 @@ async function put(env, slug, content) {
 }
 
 // =========================================================
-// ================= INDEX DATA API ========================
+// LIST (FIXED — ALWAYS JSON ARRAY)
 // =========================================================
 async function list(env) {
   const res = await env.PAGES.list();
 
-  return res.keys
+  const files = (res.keys || [])
     .map(k => k.name)
-    .filter(n => n.endsWith(".md"));
+    .filter(n => n.endsWith(".md"))
+    .map(n => n.replace(".md", ""));
+
+  return files;
 }
 
 // =========================================================
-// ================= INDEX PAGE ============================
+// INDEX PAGE
 // =========================================================
 const INDEX = `
 <!doctype html>
@@ -79,18 +91,15 @@ fetch("/_list")
     return;
   }
 
-  files.forEach(f => {
-    const slug = f.replace(".md", "");
-
+  files.forEach(slug => {
     const a = document.createElement("a");
     a.href = "/" + slug;
     a.textContent = slug;
-
     el.appendChild(a);
     el.appendChild(document.createElement("br"));
   });
 })
-.catch(() => {
+.catch(err => {
   document.getElementById("list").innerHTML = "error loading index";
 });
 </script>
@@ -100,7 +109,7 @@ fetch("/_list")
 `;
 
 // =========================================================
-// ================= VIEW PAGE =============================
+// VIEW PAGE (HTML RENDER)
 // =========================================================
 const VIEW = `
 <a href="/">back</a>
@@ -118,14 +127,15 @@ fetch("/_get/" + slug)
   document.getElementById("t").innerText = d.title || slug;
   document.getElementById("c").innerText = d.content || "";
 
-  document.getElementById("edit").onclick = () =>
+  document.getElementById("edit").onclick = () => {
     location.href = "/edit/" + slug;
+  };
 });
 </script>
 `;
 
 // =========================================================
-// ================= EDITOR ================================
+// EDITOR (SAFE SINGLE FLOW)
 // =========================================================
 const EDITOR = `
 <a href="/">back</a>
@@ -136,7 +146,8 @@ const EDITOR = `
 <script>
 const slug = location.pathname.split("/").pop();
 
-const tpl = (id, title, slug) => \`---
+function template(id, title, slug) {
+  return \`---
 id: \${id}
 title: \${title}
 slug: \${slug}
@@ -144,11 +155,12 @@ slug: \${slug}
 
 Write here...
 \`;
+}
 
 async function load() {
   if (location.pathname === "/new") {
     document.getElementById("md").value =
-      tpl(crypto.randomUUID(), "New page", "new-page");
+      template(crypto.randomUUID(), "New page", "new-page");
     return;
   }
 
@@ -157,12 +169,12 @@ async function load() {
 
   document.getElementById("md").value =
 \`---
-id: \${d.id}
-title: \${d.title}
+id: \${d.id || crypto.randomUUID()}
+title: \${d.title || ""}
 slug: \${slug}
 ---
 
-\${d.content}\`;
+\${d.content || ""}\`;
 }
 
 async function save() {
@@ -189,7 +201,7 @@ load();
 `;
 
 // =========================================================
-// ================= ROUTER ================================
+// ROUTER
 // =========================================================
 export default {
   async fetch(req, env) {
