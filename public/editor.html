@@ -3,54 +3,66 @@
 <head>
 <meta charset="utf-8">
 <title>Editor</title>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
 
-<input id="title" placeholder="title">
-<input id="slug" placeholder="slug">
-
-<br><br>
-
-<textarea id="md" style="width:100%;height:300px;"></textarea>
-
-<br>
-
 <button onclick="save()">Save</button>
 
-<h3>Preview</h3>
-<div id="preview"></div>
+<textarea id="md" style="width:100%;height:90vh;"></textarea>
 
 <script>
-const md = document.getElementById("md");
+let name = location.pathname.split('/').pop();
 
-md.addEventListener("input", () => {
-  document.getElementById("preview").innerHTML =
-    marked.parse(md.value);
-});
+// NEW FILE → генерим имя
+if (name === "__new__") {
+  name = crypto.randomUUID() + ".md";
+}
 
+// ===== TEMPLATE =====
+function template() {
+  return `---
+title: New page
+permalink: new-page
+---
+
+Write your content here...
+`;
+}
+
+// ===== LOAD =====
+async function load() {
+  const res = await fetch('/api/file/' + encodeURIComponent(name));
+  const text = await res.text();
+
+  document.getElementById('md').value = text || template();
+}
+
+// ===== SAVE =====
 function save() {
-  const id = (md.value.match(/id:\s*(.*)/)?.[1] || '').trim();
-  const title = (md.value.match(/title:\s*(.*)/)?.[1] || '').trim();
+  const md = document.getElementById('md').value;
 
-  const slugInput = (md.value.match(/slug:\s*(.*)/)?.[1] || '').trim();
+  // вытаскиваем permalink
+  const permalink = (md.match(/permalink:\s*(.*)/)?.[1] || "").trim();
 
-  const slug =
-    slugInput && slugInput !== "new-page"
-      ? slugInput
-      : title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  if (!permalink) {
+    alert("permalink required");
+    return;
+  }
 
   fetch('/api/save', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
-      id,
-      title,
-      slug,
-      content: md.value
+      name,
+      content: md
     })
-  }).then(() => location.href = '/');
+  }).then(() => {
+    // 👉 сразу открываем страницу
+    location.href = '/' + encodeURIComponent(permalink);
+  });
 }
+
+load();
 </script>
 
 </body>
