@@ -8,7 +8,7 @@ function html(c) {
 }
 
 // =========================================================
-// FRONTMATTER PARSER
+// FRONTMATTER PARSER (SAFE)
 // =========================================================
 function parse(md = "") {
   const m = md.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
@@ -44,7 +44,7 @@ async function put(env, slug, content) {
 }
 
 // =========================================================
-// LIST (SAFE VERSION)
+// INDEX LIST (100% STABLE)
 // =========================================================
 async function list(env) {
   const res = await env.PAGES.list();
@@ -56,22 +56,26 @@ async function list(env) {
 
     const slug = k.name.replace(".md", "");
 
-    const raw = await getRaw(env, slug);
-    if (!raw) continue;
+    let title = slug;
 
-    const p = parse(raw);
+    try {
+      const raw = await getRaw(env, slug);
+      if (raw) {
+        const p = parse(raw);
+        if (p.title) title = p.title;
+      }
+    } catch (e) {
+      // never break index
+    }
 
-    pages.push({
-      slug,
-      title: p.title || slug
-    });
+    pages.push({ slug, title });
   }
 
   return pages;
 }
 
 // =========================================================
-// INDEX
+// INDEX PAGE
 // =========================================================
 const INDEX = `
 <!doctype html>
@@ -219,13 +223,14 @@ export default {
       if (p.startsWith("/edit/")) return html(EDITOR);
       if (p.startsWith("/") && !p.startsWith("/_")) return html(VIEW);
 
-      // API
+      // API LIST
       if (p === "/_list") {
         return new Response(JSON.stringify(await list(env)), {
           headers: { "Content-Type": "application/json" }
         });
       }
 
+      // API GET
       if (p.startsWith("/_get/")) {
         const slug = p.split("/").pop();
         const md = await getRaw(env, slug);
@@ -242,6 +247,7 @@ export default {
         });
       }
 
+      // SAVE
       if (p === "/_save") {
         const body = await req.json();
         await put(env, body.slug, body.content);
