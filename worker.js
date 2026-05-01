@@ -8,20 +8,25 @@ function html(c) {
 }
 
 // =========================================================
-// FRONTMATTER PARSER
+// FRONTMATTER PARSER (SAFE)
 // =========================================================
 function parse(md = "") {
   const m = md.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
 
   if (!m) {
-    return { id: "", title: "", slug: "", content: md };
+    return {
+      id: "",
+      title: "",
+      slug: "",
+      content: md
+    };
   }
 
   const fm = {};
-  m[1].split("\n").forEach(l => {
-    const i = l.indexOf(":");
+  m[1].split("\n").forEach(line => {
+    const i = line.indexOf(":");
     if (i === -1) return;
-    fm[l.slice(0, i).trim()] = l.slice(i + 1).trim();
+    fm[line.slice(0, i).trim()] = line.slice(i + 1).trim();
   });
 
   return {
@@ -50,21 +55,45 @@ async function put(env, slug, content) {
   await env.PAGES.put(file(slug), content);
 }
 
+// =========================================================
+// LIST (MICRO COSTYLE - SAFE SCAN)
+// =========================================================
 async function list(env) {
   try {
     const res = await env.PAGES.list();
 
-    return (res.keys || [])
-      .map(k => k.name)
-      .filter(n => n.endsWith(".md"))
-      .map(n => n.replace(".md", ""));
+    const keys = res.keys || [];
+    const out = [];
+
+    for (const k of keys) {
+      if (!k.name.endsWith(".md")) continue;
+
+      try {
+        const obj = await env.PAGES.get(k.name);
+        if (!obj) continue;
+
+        const text = await obj.text();
+
+        const parsed = parse(text);
+
+        out.push({
+          slug: k.name.replace(".md", ""),
+          title: parsed.title || k.name.replace(".md", "")
+        });
+
+      } catch {
+        // ignore broken file
+      }
+    }
+
+    return out.sort((a, b) => a.title.localeCompare(b.title));
   } catch {
     return [];
   }
 }
 
 // =========================================================
-// INDEX UI
+// INDEX PAGE
 // =========================================================
 const INDEX = `
 <!doctype html>
@@ -80,25 +109,25 @@ const INDEX = `
 async function load() {
   try {
     const r = await fetch("/_list");
-    const files = await r.json();
+    const data = await r.json();
 
     const el = document.getElementById("list");
     el.innerHTML = "";
 
-    if (!files.length) {
+    if (!data.length) {
       el.innerHTML = "no pages yet";
       return;
     }
 
-    files.forEach(slug => {
+    data.forEach(p => {
       const a = document.createElement("a");
-      a.href = "/" + slug;
-      a.textContent = slug;
+      a.href = "/" + p.slug;
+      a.textContent = p.title;
       el.appendChild(a);
       el.appendChild(document.createElement("br"));
     });
 
-  } catch (e) {
+  } catch {
     document.getElementById("list").innerHTML = "error loading index";
   }
 }
@@ -137,7 +166,7 @@ fetch("/_get/" + slug)
 `;
 
 // =========================================================
-// EDITOR (SINGLE FLOW)
+// EDITOR
 // =========================================================
 const EDITOR = `
 <a href="/">back</a>
@@ -148,7 +177,7 @@ const EDITOR = `
 <script>
 const slug = location.pathname.split("/").pop();
 
-function tpl() {
+function template() {
   return \`---
 id: \${crypto.randomUUID()}
 title: New page
@@ -161,7 +190,7 @@ Write here...
 
 async function load() {
   if (location.pathname === "/new") {
-    document.getElementById("md").value = tpl();
+    document.getElementById("md").value = template();
     return;
   }
 
@@ -220,8 +249,7 @@ export default {
 
       // API LIST
       if (p === "/_list") {
-        const files = await list(env);
-        return new Response(JSON.stringify(files), {
+        return new Response(JSON.stringify(await list(env)), {
           headers: { "Content-Type": "application/json" }
         });
       }
