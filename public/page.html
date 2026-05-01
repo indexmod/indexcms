@@ -1,0 +1,61 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Page</title>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<style>
+body {
+  font-family: sans-serif;
+  max-width: 900px;
+  margin: 40px auto;
+  line-height: 1.5;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+a {
+  color: blue;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+  <a href="/">← back</a>
+  <a id="edit" href="#">edit</a>
+</div>
+
+<h1 id="title"></h1>
+<div id="content"></div>
+
+<script>
+const slug = location.pathname.split("/").pop();
+
+async function load() {
+  const res = await fetch("/api/page/" + slug);
+  const data = await res.json();
+
+  document.getElementById("title").textContent = data.title || slug;
+  document.getElementById("content").innerHTML = marked.parse(data.content || "");
+
+  document.getElementById("edit").href = "/editor/" + slug;
+}
+
+load();
+</script>
+
+</body>
+</html>

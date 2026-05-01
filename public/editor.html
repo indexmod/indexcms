@@ -1,0 +1,162 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Editor</title>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<style>
+body {
+  font-family: sans-serif;
+  max-width: 900px;
+  margin: 40px auto;
+}
+
+input {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+}
+
+textarea {
+  width: 100%;
+  height: 300px;
+  padding: 10px;
+  font-family: monospace;
+}
+
+.tabs {
+  margin: 10px 0;
+}
+
+button {
+  margin-right: 10px;
+}
+
+#preview {
+  border-top: 1px solid #ccc;
+  padding-top: 15px;
+}
+
+#status {
+  font-size: 12px;
+  color: gray;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Editor</h1>
+
+<input id="title" placeholder="Title">
+<input id="slug" placeholder="slug">
+
+<div class="tabs">
+  <button onclick="setMode('edit')">Edit</button>
+  <button onclick="setMode('preview')">Preview</button>
+</div>
+
+<textarea id="content"></textarea>
+
+<div id="preview" style="display:none;"></div>
+
+<br>
+<button onclick="save()">Save</button>
+<span id="status"></span>
+
+<script>
+let mode = "edit";
+let currentSlug = null;
+
+// ================= MODE =================
+function setMode(m) {
+  mode = m;
+
+  document.getElementById("content").style.display =
+    m === "edit" ? "block" : "none";
+
+  document.getElementById("preview").style.display =
+    m === "preview" ? "block" : "none";
+
+  if (m === "preview") renderPreview();
+}
+
+// ================= PREVIEW =================
+function renderPreview() {
+  const md = document.getElementById("content").value;
+  document.getElementById("preview").innerHTML =
+    marked.parse(md);
+}
+
+// ================= AUTO SLUG =================
+document.getElementById("title").addEventListener("input", e => {
+  if (currentSlug) return;
+
+  const slug = e.target.value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+
+  document.getElementById("slug").value = slug;
+});
+
+// ================= LOAD =================
+function loadIfSlug() {
+  const parts = location.pathname.split("/");
+  const slug = parts.pop();
+
+  if (!slug || slug === "editor") return;
+
+  fetch("/api/page/" + slug)
+    .then(r => r.json())
+    .then(data => {
+      currentSlug = slug;
+
+      document.getElementById("title").value = data.title;
+      document.getElementById("slug").value = data.slug;
+      document.getElementById("content").value = data.content;
+
+      renderPreview();
+    });
+}
+
+// ================= SAVE =================
+function save() {
+  const data = {
+    title: document.getElementById("title").value,
+    slug: document.getElementById("slug").value,
+    content: document.getElementById("content").value
+  };
+
+  document.getElementById("status").innerText = "saving...";
+
+  fetch("/api/save", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(data)
+  })
+  .then(() => {
+    document.getElementById("status").innerText = "saved";
+
+    setTimeout(() => {
+      document.getElementById("status").innerText = "";
+    }, 1500);
+
+    currentSlug = data.slug;
+    history.replaceState(null, "", "/editor/" + data.slug);
+  });
+}
+
+// ================= AUTO PREVIEW =================
+document.getElementById("content").addEventListener("input", () => {
+  if (mode === "preview") renderPreview();
+});
+
+// INIT
+loadIfSlug();
+</script>
+
+</body>
+</html>
