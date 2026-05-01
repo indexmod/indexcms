@@ -1,287 +1,187 @@
-// ================= UTILS =================
-function json(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json" }
-  });
-}
-
-function html(content) {
-  return new Response(content, {
+// ================= HTML WRAPPER =================
+function html(c) {
+  return new Response(c, {
     headers: { "Content-Type": "text/html; charset=utf-8" }
   });
 }
 
-// ================= PARSE =================
-function parse(raw = "") {
-  const match = raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+// ================= MD PARSE =================
+function parse(md = "") {
+  const m = md.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+  if (!m) return { title: "", content: md };
 
-  if (!match) {
-    return { title: "", permalink: "", content: raw };
-  }
-
-  const fm = match[1];
-  const content = match[2];
-
-  const data = {};
-
-  fm.split("\n").forEach(line => {
-    const i = line.indexOf(":");
+  const fm = {};
+  m[1].split("\n").forEach(l => {
+    const i = l.indexOf(":");
     if (i === -1) return;
-
-    const key = line.slice(0, i).trim();
-    const val = line.slice(i + 1).trim();
-
-    data[key] = val;
+    fm[l.slice(0,i).trim()] = l.slice(i+1).trim();
   });
 
   return {
-    title: data.title || "",
-    permalink: data.permalink || "",
-    content
+    id: fm.id || "",
+    title: fm.title || "",
+    slug: fm.slug || "",
+    content: m[2]
   };
 }
 
-// ================= STORAGE =================
-async function getFile(env, name) {
-  const f = await env.PAGES.get(name);
-  return f ? await f.text() : "";
+// ================= R2 HELPERS =================
+const file = (slug) => slug + ".md";
+
+async function get(env, slug) {
+  const obj = await env.PAGES.get(file(slug));
+  return obj ? await obj.text() : null;
 }
 
-// ================= SAVE =================
-async function save(req, env) {
-  const data = await req.json();
-
-  let name = data.name;
-  let content = data.content;
-
-  if (!name) return json({ error: "no name" }, 400);
-
-  // если новый файл → генерим uuid
-  if (name === "__new__") {
-    name = crypto.randomUUID() + ".md";
-  }
-
-  await env.PAGES.put(name, content);
-
-  return json({ ok: true, name });
+async function put(env, slug, content) {
+  await env.PAGES.put(file(slug), content);
 }
 
-// ================= FIND BY PERMALINK =================
-async function findByPermalink(env, permalink) {
-  const list = await env.PAGES.list();
-
-  for (const k of list.keys) {
-    if (!k.name.endsWith(".md")) continue;
-    if (k.name === "template.md") continue;
-
-    const raw = await getFile(env, k.name);
-    const p = parse(raw);
-
-    if (p.permalink === permalink) {
-      return { file: k.name, ...p };
-    }
-  }
-
-  return null;
-}
-
-// ================= LIST =================
 async function list(env) {
   const res = await env.PAGES.list();
-
-  const pages = [];
-
-  for (const k of res.keys) {
-    if (!k.name.endsWith(".md")) continue;
-    if (k.name === "template.md") continue;
-
-    const raw = await getFile(env, k.name);
-    const p = parse(raw);
-
-    pages.push({
-      title: p.title || k.name,
-      permalink: p.permalink || ""
-    });
-  }
-
-  pages.sort((a, b) => a.title.localeCompare(b.title));
-
-  return json(pages);
+  return res.keys.map(k => k.name);
 }
 
 // ================= INDEX =================
 const INDEX = `
-<!doctype html>
-<html>
-<body>
-
-<h1>Pages</h1>
-<button onclick="location.href='/file/__new__'">+ New</button>
-
+<h1>Index</h1>
+<a href="/new">+ New</a>
 <div id="list">loading...</div>
 
 <script>
-fetch('/api/list')
+fetch("/_list")
 .then(r => r.json())
-.then(pages => {
-  const el = document.getElementById('list');
-  el.innerHTML = '';
+.then(files => {
+  const el = document.getElementById("list");
+  el.innerHTML = "";
 
-  pages.forEach(p => {
-    if (!p.permalink) return;
-
-    const a = document.createElement('a');
-    a.href = '/' + p.permalink;
-    a.textContent = p.title;
+  files.forEach(f => {
+    const slug = f.replace(".md","");
+    const a = document.createElement("a");
+    a.href = "/" + slug;
+    a.textContent = slug;
     el.appendChild(a);
-    el.appendChild(document.createElement('br'));
+    el.appendChild(document.createElement("br"));
   });
 });
 </script>
-
-</body>
-</html>
-`;
-
-// ================= EDITOR =================
-const EDITOR = `
-<!doctype html>
-<html>
-<body>
-
-<button onclick="save()">Save</button>
-
-<textarea id="md" style="width:100%;height:90vh;"></textarea>
-
-<script>
-let name = location.pathname.split('/').pop();
-
-// ===== LOAD =====
-async function load() {
-
-  // новый файл → загружаем template.md
-  if (name === "__new__") {
-    const res = await fetch('/api/file/template.md');
-    const tpl = await res.text();
-    document.getElementById('md').value = tpl;
-    return;
-  }
-
-  const res = await fetch('/api/file/' + encodeURIComponent(name));
-  const text = await res.text();
-
-  document.getElementById('md').value = text;
-}
-
-// ===== SAVE =====
-function save() {
-  let md = document.getElementById('md').value;
-
-  let permalink = (md.match(/permalink:\\s*(.*)/)?.[1] || "").trim();
-
-  // если нет permalink → генерим
-  if (!permalink) {
-    const title = (md.match(/title:\\s*(.*)/)?.[1] || "").trim();
-
-    permalink = title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
-
-    md = md.replace(/permalink:\\s*(.*)/, "permalink: " + permalink);
-  }
-
-  fetch('/api/save', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({
-      name,
-      content: md
-    })
-  })
-  .then(() => {
-    location.href = '/' + permalink;
-  });
-}
-
-load();
-</script>
-
-</body>
-</html>
 `;
 
 // ================= VIEW =================
 const VIEW = `
-<!doctype html>
-<html>
-<head>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-</head>
-<body>
-
 <a href="/">back</a>
 <button id="edit">edit</button>
-
-<h1 id="title"></h1>
-<div id="out"></div>
+<h1 id="t"></h1>
+<pre id="c"></pre>
 
 <script>
-const permalink = location.pathname.slice(1);
+const slug = location.pathname.slice(1);
 
-fetch('/api/find/' + encodeURIComponent(permalink))
+fetch("/_get/" + slug)
 .then(r => r.json())
 .then(d => {
+  document.getElementById("t").innerText = d.title || slug;
+  document.getElementById("c").innerText = d.content;
 
-  document.getElementById('title').textContent = d.title;
-  document.getElementById('out').innerHTML = marked.parse(d.content);
-
-  document.getElementById('edit').onclick = () => {
-    location.href = '/file/' + d.file;
-  };
+  document.getElementById("edit").onclick = () =>
+    location.href = "/edit/" + slug;
 });
 </script>
+`;
 
-</body>
-</html>
+// ================= EDITOR =================
+const EDITOR = `
+<a href="/">back</a>
+<button onclick="save()">save</button>
+<textarea id="md" style="width:100%;height:90vh;"></textarea>
+
+<script>
+const slug = location.pathname.split("/").pop();
+
+const tpl = (id, title, slug) => \`---
+id: \${id}
+title: \${title}
+slug: \${slug}
+---
+
+Write here...
+\`;
+
+async function load() {
+  if (location.pathname === "/new") {
+    document.getElementById("md").value =
+      tpl(crypto.randomUUID(), "New page", "new-page");
+    return;
+  }
+
+  const r = await fetch("/_get/" + slug);
+  const d = await r.json();
+
+  document.getElementById("md").value =
+\`---
+id: \${d.id}
+title: \${d.title}
+slug: \${slug}
+---
+
+\${d.content}\`;
+}
+
+async function save() {
+  const md = document.getElementById("md").value;
+  const slug = (md.match(/slug:\\s*(.*)/)?.[1] || "").trim() || "untitled";
+
+  await fetch("/_save", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ slug, content: md })
+  });
+
+  location.href = "/" + slug;
+}
+
+load();
+</script>
 `;
 
 // ================= ROUTER =================
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
-    const path = url.pathname;
+    const p = url.pathname;
 
     try {
 
-      // API
-      if (path === "/api/save") return save(req, env);
-      if (path === "/api/list") return list(env);
+      // ===== UI =====
+      if (p === "/") return html(INDEX);
+      if (p === "/new") return html(EDITOR);
+      if (p.startsWith("/edit/")) return html(EDITOR);
+      if (p.startsWith("/") && !p.startsWith("/_")) return html(VIEW);
 
-      if (path.startsWith("/api/file/")) {
-        const name = decodeURIComponent(path.split("/").pop());
-        return new Response(await getFile(env, name));
+      // ===== API INTERNAL =====
+      if (p === "/_list") {
+        return new Response(JSON.stringify(await list(env)));
       }
 
-      if (path.startsWith("/api/find/")) {
-        const permalink = decodeURIComponent(path.split("/").pop());
-        const page = await findByPermalink(env, permalink);
+      if (p.startsWith("/_get/")) {
+        const slug = p.split("/").pop();
+        const md = await get(env, slug);
 
-        if (!page) return json({ error: "not found" }, 404);
+        if (!md) return new Response("{}", { status: 404 });
 
-        return json(page);
+        return new Response(JSON.stringify(parse(md)));
       }
 
-      // UI
-      if (path === "/") return html(INDEX);
-      if (path.startsWith("/file/")) return html(EDITOR);
+      if (p === "/_save") {
+        const body = await req.json();
+        await put(env, body.slug, body.content);
+        return new Response("ok");
+      }
 
-      // permalink route
-      return html(VIEW);
+      return new Response("404", { status: 404 });
 
     } catch (e) {
-      return json({ error: e.message }, 500);
+      return new Response(e.message, { status: 500 });
     }
   }
 };
