@@ -1,9 +1,6 @@
+const EDITOR = `
 <!doctype html>
 <html>
-<head>
-<meta charset="utf-8">
-<title>Editor</title>
-</head>
 <body>
 
 <button onclick="save()">Save</button>
@@ -13,24 +10,31 @@
 <script>
 let name = location.pathname.split('/').pop();
 
-// NEW FILE → генерим имя
+// ===== NEW FILE =====
 if (name === "__new__") {
   name = crypto.randomUUID() + ".md";
 }
 
 // ===== TEMPLATE =====
 function template() {
-  return `---
+  const id = crypto.randomUUID();
+
+  return \`---
 title: New page
-permalink: new-page
+permalink:
 ---
 
-Write your content here...
-`;
+Write here...
+\`;
 }
 
 // ===== LOAD =====
 async function load() {
+  if (location.pathname.includes("__new__")) {
+    document.getElementById('md').value = template();
+    return;
+  }
+
   const res = await fetch('/api/file/' + encodeURIComponent(name));
   const text = await res.text();
 
@@ -41,12 +45,25 @@ async function load() {
 function save() {
   const md = document.getElementById('md').value;
 
-  // вытаскиваем permalink
-  const permalink = (md.match(/permalink:\s*(.*)/)?.[1] || "").trim();
+  // 👉 достаём permalink
+  let permalink = (md.match(/permalink:\\s*(.*)/)?.[1] || "").trim();
 
+  // 👉 если нет — генерим из title
   if (!permalink) {
-    alert("permalink required");
-    return;
+    const title = (md.match(/title:\\s*(.*)/)?.[1] || "").trim();
+
+    permalink = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+
+    // вставляем обратно в markdown
+    const updated = md.replace(
+      /permalink:\\s*(.*)/,
+      "permalink: " + permalink
+    );
+
+    document.getElementById('md').value = updated;
   }
 
   fetch('/api/save', {
@@ -54,11 +71,11 @@ function save() {
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
       name,
-      content: md
+      content: document.getElementById('md').value
     })
-  }).then(() => {
-    // 👉 сразу открываем страницу
-    location.href = '/' + encodeURIComponent(permalink);
+  })
+  .then(() => {
+    location.href = '/' + permalink;
   });
 }
 
@@ -67,3 +84,4 @@ load();
 
 </body>
 </html>
+`;
