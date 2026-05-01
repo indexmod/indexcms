@@ -1,3 +1,5 @@
+
+// ================= JSON =================
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -5,34 +7,32 @@ function json(data, status = 200) {
   });
 }
 
+// ================= HTML =================
 function html(content) {
   return new Response(content, {
     headers: { "Content-Type": "text/html; charset=utf-8" }
   });
 }
 
-// ================= LIST FILES =================
-async function list(env) {
-  const res = await env.PAGES.list();
-  const files = res.keys.map(k => k.name).filter(n => n.endsWith(".md"));
-  files.sort();
-  return json(files);
-}
-
-// ================= GET FILE =================
-async function get(env, name) {
-  const file = await env.PAGES.get(name);
-  if (!file) return json({ error: "not found" }, 404);
-  return json({ name, content: await file.text() });
-}
-
-// ================= SAVE FILE =================
+// ================= SAVE =================
 async function save(req, env) {
   const data = await req.json();
-  if (!data.name) return json({ error: "no name" }, 400);
 
   await env.PAGES.put(data.name, data.content || "");
+
   return json({ ok: true });
+}
+
+// ================= GET =================
+async function get(env, name) {
+  const file = await env.PAGES.get(name);
+  return file ? file.text() : "";
+}
+
+// ================= LIST =================
+async function list(env) {
+  const res = await env.PAGES.list();
+  return json(res.keys.map(k => k.name));
 }
 
 // ================= INDEX =================
@@ -40,39 +40,24 @@ const INDEX = `
 <!doctype html>
 <html>
 <body>
-
 <h1>Files</h1>
-<button onclick="newFile()">+ New</button>
-
 <div id="list">loading...</div>
 
 <script>
-function load() {
-  fetch('/api/list')
-    .then(r => r.json())
-    .then(files => {
-      const el = document.getElementById('list');
-      el.innerHTML = '';
+fetch('/api/list')
+.then(r => r.json())
+.then(files => {
+  const el = document.getElementById('list');
 
-      files.forEach(f => {
-        const a = document.createElement('a');
-        a.href = '/file/' + f;
-        a.textContent = f;
-        el.appendChild(a);
-        el.appendChild(document.createElement('br'));
-      });
-    });
-}
-
-function newFile() {
-  const name = prompt("filename", "page.md");
-  if (!name) return;
-  location.href = '/file/' + name;
-}
-
-load();
+  files.forEach(f => {
+    const a = document.createElement('a');
+    a.href = '/file/' + f;
+    a.textContent = f;
+    el.appendChild(a);
+    el.appendChild(document.createElement('br'));
+  });
+});
 </script>
-
 </body>
 </html>
 `;
@@ -83,23 +68,30 @@ const EDITOR = `
 <html>
 <body>
 
-<a href="/">back</a>
-<button onclick="save()">save</button>
+<button onclick="save()">Save</button>
+<button onclick="view()">View</button>
 
-<h3 id="name"></h3>
-<textarea id="t" style="width:100%;height:80vh;"></textarea>
+<textarea id="md" style="width:100%;height:90vh;"></textarea>
 
 <script>
 const name = location.pathname.split('/').pop();
 
-document.getElementById('name').textContent = name;
+function template() {
+  return \`---
+id: 123456789
+title: Edit title here
+permalink: Edit permalink here
+---
 
-function load() {
-  fetch('/api/file/' + name)
-    .then(r => r.json())
-    .then(d => {
-      document.getElementById('t').value = d.content || '';
-    });
+Paste markdown here
+\`;
+}
+
+async function load() {
+  const res = await fetch('/api/file/' + name);
+  const text = await res.text();
+
+  document.getElementById('md').value = text || template();
 }
 
 function save() {
@@ -108,12 +100,50 @@ function save() {
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
       name,
-      content: document.getElementById('t').value
+      content: document.getElementById('md').value
     })
-  }).then(() => alert('saved'));
+  }).then(() => {
+    location.href = '/view/' + name;
+  });
+}
+
+function view() {
+  location.href = '/view/' + name;
 }
 
 load();
+</script>
+
+</body>
+</html>
+`;
+
+// ================= VIEW =================
+const VIEW = `
+<!doctype html>
+<html>
+<head>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+
+<a href="/">back</a>
+<button id="edit">edit</button>
+
+<div id="out"></div>
+
+<script>
+const name = location.pathname.split('/').pop();
+
+fetch('/api/file/' + name)
+.then(r => r.text())
+.then(md => {
+  document.getElementById('out').innerHTML = marked.parse(md);
+
+  document.getElementById('edit').onclick = () => {
+    location.href = '/file/' + name;
+  };
+});
 </script>
 
 </body>
@@ -126,25 +156,22 @@ export default {
     const url = new URL(req.url);
     const path = url.pathname;
 
-    try {
+    if (path === "/api/save") return save(req, env);
 
-      if (path === "/api/list") return list(env);
+    if (path === "/api/list") return list(env);
 
-      if (path.startsWith("/api/file/")) {
-        const name = decodeURIComponent(path.split("/").pop());
-        return get(env, name);
-      }
-
-      if (path === "/api/save") return save(req, env);
-
-      if (path === "/") return html(INDEX);
-
-      if (path.startsWith("/file/")) return html(EDITOR);
-
-      return new Response("404", { status: 404 });
-
-    } catch (e) {
-      return json({ error: e.message }, 500);
+    if (path.startsWith("/api/file/")) {
+      const name = decodeURIComponent(path.split("/").pop());
+      const file = await env.PAGES.get(name);
+      return new Response(await (file?.text() || ""));
     }
+
+    if (path === "/") return html(INDEX);
+
+    if (path.startsWith("/file/")) return html(EDITOR);
+
+    if (path.startsWith("/view/")) return html(VIEW);
+
+    return new Response("404", { status: 404 });
   }
 };
