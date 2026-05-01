@@ -1,5 +1,5 @@
 // =========================================================
-// ================= HTML ================================
+// ================= HTML WRAPPER ==========================
 // =========================================================
 function html(c) {
   return new Response(c, {
@@ -8,32 +8,88 @@ function html(c) {
 }
 
 // =========================================================
-// ================= R2 HELPERS ==========================
+// ================= STORAGE ===============================
 // =========================================================
 const file = (slug) => slug + ".md";
+const INDEX_KEY = "index.json";
 
-async function get(env, slug) {
+// =========================================================
+// ================= INDEX STORAGE =========================
+// =========================================================
+async function getIndex(env) {
+  const obj = await env.PAGES.get(INDEX_KEY);
+  return obj ? JSON.parse(await obj.text()) : [];
+}
+
+async function saveIndex(env, index) {
+  await env.PAGES.put(INDEX_KEY, JSON.stringify(index));
+}
+
+// =========================================================
+// ================= FRONTMATTER PARSER ===================
+// =========================================================
+function parse(md = "") {
+  const m = md.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+  if (!m) return { title: "", slug: "", content: md };
+
+  const fm = {};
+  m[1].split("\n").forEach(l => {
+    const i = l.indexOf(":");
+    if (i === -1) return;
+    fm[l.slice(0, i).trim()] = l.slice(i + 1).trim();
+  });
+
+  return {
+    id: fm.id || "",
+    title: fm.title || "",
+    slug: fm.slug || "",
+    content: m[2]
+  };
+}
+
+// =========================================================
+// ================= R2 HELPERS ============================
+// =========================================================
+async function getFile(env, slug) {
   const obj = await env.PAGES.get(file(slug));
   return obj ? await obj.text() : null;
 }
 
-async function put(env, slug, content) {
+async function putFile(env, slug, content) {
   await env.PAGES.put(file(slug), content);
 }
 
 // =========================================================
-// ================= LIST (СТАБИЛЬНАЯ ВЕРСИЯ) ===========
+// ================= SAVE (FILE + INDEX) ==================
 // =========================================================
-async function list(env) {
-  const res = await env.PAGES.list();
+async function savePage(env, slug, content) {
+  await putFile(env, slug, content);
 
-  return res.keys
-    .map(k => k.name)
-    .filter(n => n.endsWith(".md"));
+  const parsed = parse(content);
+  const title = parsed.title || slug;
+
+  let index = await getIndex(env);
+
+  const existing = index.find(i => i.slug === slug);
+
+  if (existing) {
+    existing.title = title;
+  } else {
+    index.push({ slug, title });
+  }
+
+  await saveIndex(env, index);
 }
 
 // =========================================================
-// ================= INDEX ===============================
+// ================= API: LIST =============================
+// =========================================================
+async function list(env) {
+  return await getIndex(env);
+}
+
+// =========================================================
+// ================= INDEX PAGE ============================
 // =========================================================
 const INDEX = `
 <!doctype html>
@@ -48,21 +104,20 @@ const INDEX = `
 <script>
 fetch("/_list")
 .then(r => r.json())
-.then(files => {
+.then(items => {
   const el = document.getElementById("list");
   el.innerHTML = "";
 
-  if (!files.length) {
+  if (!items.length) {
     el.innerHTML = "no pages yet";
     return;
   }
 
-  files.forEach(f => {
-    const slug = f.replace(".md", "");
-
+  items.forEach(p => {
     const a = document.createElement("a");
-    a.href = "/" + slug;
-    a.textContent = slug;
+
+    a.href = "/edit/" + p.slug;
+    a.textContent = p.title;
 
     el.appendChild(a);
     el.appendChild(document.createElement("br"));
@@ -103,7 +158,7 @@ fetch("/_get/" + slug)
 `;
 
 // =========================================================
-// ================= EDITOR ==============================
+// ================= EDITOR ================================
 // =========================================================
 const EDITOR = `
 <a href="/">back</a>
@@ -114,17 +169,19 @@ const EDITOR = `
 <script>
 const slug = location.pathname.split("/").pop();
 
-async function load() {
-  if (location.pathname === "/new") {
-    document.getElementById("md").value =
-\`---
-id: \${crypto.randomUUID()}
-title: New page
-slug: new-page
+const tpl = (id, title, slug) => \`---
+id: \${id}
+title: \${title}
+slug: \${slug}
 ---
 
 Write here...
 \`;
+
+async function load() {
+  if (location.pathname === "/new") {
+    document.getElementById("md").value =
+      tpl(crypto.randomUUID(), "New page", "new-page");
     return;
   }
 
@@ -165,7 +222,7 @@ load();
 `;
 
 // =========================================================
-// ================= ROUTER ==============================
+// ================= ROUTER ================================
 // =========================================================
 export default {
   async fetch(req, env) {
@@ -180,27 +237,34 @@ export default {
       if (p.startsWith("/edit/")) return html(EDITOR);
       if (p.startsWith("/") && !p.startsWith("/_")) return html(VIEW);
 
-      // API
+      // API LIST (FAST INDEX)
       if (p === "/_list") {
         return new Response(JSON.stringify(await list(env)), {
           headers: { "Content-Type": "application/json" }
         });
       }
 
+      // API GET FILE
       if (p.startsWith("/_get/")) {
         const slug = p.split("/").pop();
-        const md = await get(env, slug);
+        const md = await getFile(env, slug);
 
-        if (!md) return new Response("{}", { status: 404 });
+        if (!md) {
+          return new Response(JSON.stringify({ error: "not found" }), {
+            status: 404,
+            headers: { "Content-Type": "application/json" }
+          });
+        }
 
         return new Response(JSON.stringify(parse(md)), {
           headers: { "Content-Type": "application/json" }
         });
       }
 
+      // SAVE
       if (p === "/_save") {
         const body = await req.json();
-        await put(env, body.slug, body.content);
+        await savePage(env, body.slug, body.content);
         return new Response("ok");
       }
 
