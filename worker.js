@@ -1,5 +1,5 @@
 // =========================================================
-// HTML WRAPPER
+// ================= HTML ================================
 // =========================================================
 function html(c) {
   return new Response(c, {
@@ -8,7 +8,7 @@ function html(c) {
 }
 
 // =========================================================
-// FRONTMATTER PARSER (SAFE)
+// ================= FRONTMATTER PARSER ==================
 // =========================================================
 function parse(md = "") {
   const m = md.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
@@ -30,11 +30,11 @@ function parse(md = "") {
 }
 
 // =========================================================
-// R2 HELPERS
+// ================= R2 HELPERS ==========================
 // =========================================================
 const file = (slug) => slug + ".md";
 
-async function getRaw(env, slug) {
+async function get(env, slug) {
   const obj = await env.PAGES.get(file(slug));
   return obj ? await obj.text() : null;
 }
@@ -44,38 +44,32 @@ async function put(env, slug, content) {
 }
 
 // =========================================================
-// INDEX LIST (100% STABLE)
+// ================= LIST (FIXED) ========================
 // =========================================================
 async function list(env) {
   const res = await env.PAGES.list();
 
-  const pages = [];
+  const out = [];
 
   for (const k of res.keys) {
     if (!k.name.endsWith(".md")) continue;
 
-    const slug = k.name.replace(".md", "");
+    const raw = await get(env, k.name.replace(".md", ""));
+    if (!raw) continue;
 
-    let title = slug;
+    const p = parse(raw);
 
-    try {
-      const raw = await getRaw(env, slug);
-      if (raw) {
-        const p = parse(raw);
-        if (p.title) title = p.title;
-      }
-    } catch (e) {
-      // never break index
-    }
-
-    pages.push({ slug, title });
+    out.push({
+      slug: k.name.replace(".md", ""),
+      title: p.title || k.name.replace(".md", "")
+    });
   }
 
-  return pages;
+  return out;
 }
 
 // =========================================================
-// INDEX PAGE
+// ================= INDEX PAGE ==========================
 // =========================================================
 const INDEX = `
 <!doctype html>
@@ -90,20 +84,19 @@ const INDEX = `
 <script>
 fetch("/_list")
 .then(r => r.json())
-.then(pages => {
+.then(items => {
   const el = document.getElementById("list");
   el.innerHTML = "";
 
-  if (!pages.length) {
+  if (!items.length) {
     el.innerHTML = "no pages yet";
     return;
   }
 
-  pages.forEach(p => {
+  items.forEach(p => {
     const a = document.createElement("a");
     a.href = "/" + p.slug;
-    a.textContent = p.title;
-
+    a.textContent = p.title;   // ✅ ВОТ ТЕПЕРЬ ТАЙТЛ
     el.appendChild(a);
     el.appendChild(document.createElement("br"));
   });
@@ -118,7 +111,7 @@ fetch("/_list")
 `;
 
 // =========================================================
-// VIEW
+// ================= VIEW ================================
 // =========================================================
 const VIEW = `
 <a href="/">back</a>
@@ -143,7 +136,7 @@ fetch("/_get/" + slug)
 `;
 
 // =========================================================
-// EDITOR
+// ================= EDITOR ==============================
 // =========================================================
 const EDITOR = `
 <a href="/">back</a>
@@ -154,20 +147,19 @@ const EDITOR = `
 <script>
 const slug = location.pathname.split("/").pop();
 
-function tpl() {
-  return \`---
-id: \${crypto.randomUUID()}
-title: New page
-slug: new-page
+const tpl = (id, title, slug) => \`---
+id: \${id}
+title: \${title}
+slug: \${slug}
 ---
 
 Write here...
 \`;
-}
 
 async function load() {
   if (location.pathname === "/new") {
-    document.getElementById("md").value = tpl();
+    document.getElementById("md").value =
+      tpl(crypto.randomUUID(), "New page", "new-page");
     return;
   }
 
@@ -208,7 +200,7 @@ load();
 `;
 
 // =========================================================
-// ROUTER
+// ================= ROUTER ==============================
 // =========================================================
 export default {
   async fetch(req, env) {
@@ -233,7 +225,7 @@ export default {
       // API GET
       if (p.startsWith("/_get/")) {
         const slug = p.split("/").pop();
-        const md = await getRaw(env, slug);
+        const md = await get(env, slug);
 
         if (!md) {
           return new Response(JSON.stringify({ error: "not found" }), {
