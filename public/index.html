@@ -3,46 +3,13 @@
 <head>
 <meta charset="utf-8">
 <title>IndexCMS</title>
-
-<style>
-body {
-  font-family: sans-serif;
-  max-width: 900px;
-  margin: 40px auto;
-}
-
-a {
-  display: block;
-  padding: 6px 0;
-  color: blue;
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-button {
-  padding: 6px 10px;
-}
-</style>
 </head>
-
 <body>
 
-<div class="header">
-  <h1>Pages</h1>
-  <button onclick="location.href='/editor'">+ New</button>
-</div>
+<h1>Pages</h1>
+<button onclick="location.href='/editor'">+ New</button>
 
-<div id="list">Loading...</div>
+<div id="list">loading...</div>
 
 <script>
 async function load() {
@@ -57,6 +24,7 @@ async function load() {
     a.href = "/page/" + p.slug;
     a.textContent = p.title || p.slug;
     el.appendChild(a);
+    el.appendChild(document.createElement("br"));
   });
 }
 
