@@ -182,7 +182,9 @@ const VIEW = `
 <button id="edit">edit</button>
 
 <h1 id="t"></h1>
-<pre id="c"></pre>
+<div id="c"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 <script>
 const slug = location.pathname.split("/").filter(Boolean).pop();
@@ -191,7 +193,10 @@ fetch("/_get/" + slug)
 .then(r => r.json())
 .then(d => {
   document.getElementById("t").innerText = d.title || slug;
-  document.getElementById("c").innerText = d.content || "";
+
+  // 🔥 ВОТ ГЛАВНОЕ
+  document.getElementById("c").innerHTML =
+    marked.parse(d.content || "");
 
   document.getElementById("edit").onclick = () =>
     location.href = "/edit/" + slug;
