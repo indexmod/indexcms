@@ -314,6 +314,14 @@ export default {
 
     try {
 
+      if (
+       p.endsWith(".svg") ||
+       p.endsWith(".css") ||
+       p.endsWith(".js")
+     ) {
+       return fetch(req);
+     }
+
       if (p === "/_list") {
         return new Response(JSON.stringify(await list(env)), {
           headers: { "Content-Type": "application/json" }
