@@ -217,7 +217,7 @@ async function list(env) {
 // ================= INDEX PAGE ============================
 // =========================================================
 const INDEX = `
-<h1>Topics</h1>
+<h1>Indexmmod Fashion and Art</h1>
 <a href="/new">+ New</a>
 
 <div id="list">loading...</div>
