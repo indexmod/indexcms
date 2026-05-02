@@ -236,7 +236,7 @@ fetch("/_list")
 
   items.forEach(p => {
     const a = document.createElement("a");
-    a.href = "/edit/" + p.slug;
+    a.href = "/" + p.slug;
     a.textContent = p.title || p.slug;
 
     el.appendChild(a);
@@ -253,8 +253,7 @@ fetch("/_list")
 // ================= VIEW PAGE =============================
 // =========================================================
 const VIEW = `
-<a href="/">back</a>
-<button id="edit">edit</button>
+<button id="edit">Edit</button>
 
 <h1 id="t"></h1>
 <div id="c"></div>
@@ -283,8 +282,7 @@ fetch("/_get/" + slug)
 // ================= EDITOR ================================
 // =========================================================
 const EDITOR = `
-<a href="/">back</a>
-<button onclick="save()">save</button>
+<button onclick="save()">Save</button>
 
 <textarea id="md" style="width:100%;height:90vh;"></textarea>
 
