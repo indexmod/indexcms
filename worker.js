@@ -90,7 +90,9 @@ function html(c, rightUI = "") {
 <html>
 <head>
 <meta charset="utf-8">
-<link rel="icon" href="/favicon.svg">
+
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+
 <style>${baseCSS()}</style>
 </head>
 
@@ -192,6 +194,21 @@ async function savePage(env, slug, content) {
 // =========================================================
 async function list(env) {
   return await getIndex(env);
+}
+
+// =========================================================
+// ================= ASSETS FIX ==========================
+// =========================================================
+async function serveAsset(env, name, type) {
+  const obj = await env.PAGES.get(name);
+  if (!obj) return new Response("not found", { status: 404 });
+
+  return new Response(await obj.arrayBuffer(), {
+    headers: {
+      "Content-Type": type,
+      "Cache-Control": "public, max-age=86400"
+    }
+  });
 }
 
 // =========================================================
@@ -314,14 +331,16 @@ export default {
 
     try {
 
-      if (
-       p.endsWith(".svg") ||
-       p.endsWith(".css") ||
-       p.endsWith(".js")
-     ) {
-       return fetch(req);
-     }
+      // ===== FIXED ASSETS =====
+      if (p === "/logo.svg") {
+        return serveAsset(env, "logo.svg", "image/svg+xml");
+      }
 
+      if (p === "/favicon.svg") {
+        return serveAsset(env, "favicon.svg", "image/svg+xml");
+      }
+
+      // ===== API =====
       if (p === "/_list") {
         return new Response(JSON.stringify(await list(env)), {
           headers: { "Content-Type": "application/json" }
@@ -347,7 +366,7 @@ export default {
         return new Response("ok");
       }
 
-      // UI
+      // ===== UI =====
       if (p === "/") return html(INDEX, `<a href="/new">New</a>`);
       if (p === "/new") return html(EDITOR, `<button onclick="save()">Save</button>`);
       if (p.startsWith("/edit/")) return html(EDITOR, `<button onclick="save()">Save</button>`);
