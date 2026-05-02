@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="g" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#f5f5f5"/>
+      <stop offset="40%" stop-color="#c9c9c9"/>
+      <stop offset="100%" stop-color="#7a7a7a"/>
+    </radialGradient>
+
+    <radialGradient id="shine" cx="30%" cy="25%" r="30%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- transparent background (alpha) -->
+  <rect width="128" height="128" fill="none"/>
+
+  <!-- sphere -->
+  <circle cx="64" cy="64" r="38" fill="url(#g)"/>
+
+  <!-- highlight -->
+  <circle cx="55" cy="50" r="18" fill="url(#shine)"/>
+
+  <!-- subtle edge shadow -->
+  <circle cx="64" cy="64" r="38" fill="none" stroke="#5a5a5a" stroke-opacity="0.25"/>
+</svg>

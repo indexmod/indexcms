@@ -3,19 +3,10 @@
 // =========================================================
 function baseCSS() {
   return `
-/* ================= RESET ================= */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
 
-* {
-  box-sizing: border-box;
-}
-
-html, body {
-  margin: 0;
-  padding: 0;
-}
-
-/* ================= LAYOUT ================= */
-
+/* ===== LAYOUT ===== */
 body {
   font-family: Georgia, "Times New Roman", serif;
   font-size: 22px;
@@ -25,106 +16,98 @@ body {
 
   max-width: 720px;
   margin: 0 auto;
-  padding: 80px 24px;
+  padding: 100px 24px 80px;
 }
 
-/* ================= TYPOGRAPHY ================= */
+/* ===== TOP BAR ===== */
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 60px;
 
-h1 {
-  font-size: 42px;
-  font-weight: normal;
-  margin: 0 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 20px;
 }
 
-h2 {
-  font-size: 30px;
-  font-weight: normal;
-  margin: 48px 0 16px;
+.logo img {
+  height: 28px;
 }
 
-h3 {
-  font-size: 24px;
-  font-weight: normal;
-  margin: 32px 0 12px;
+.nav {
+  display: flex;
+  gap: 16px;
 }
 
-p {
-  margin: 16px 0;
-}
+/* ===== TYPO ===== */
+h1 { font-size: 42px; margin: 0 0 32px; font-weight: normal; }
+h2 { font-size: 30px; margin: 48px 0 16px; font-weight: normal; }
+p { margin: 16px 0; }
 
-ul {
-  padding-left: 24px;
-  margin: 16px 0;
-}
+ul { padding-left: 24px; }
 
-li {
-  margin: 6px 0;
-}
-
-/* ================= LINKS ================= */
-
+/* ===== LINKS ===== */
 a {
   color: #1a73e8;
   text-decoration: none;
 }
+a:hover { text-decoration: underline; }
 
-a:hover {
-  text-decoration: underline;
-}
-
-/* ================= UI (минимально) ================= */
-
+/* ===== BUTTONS ===== */
 button {
   all: unset;
   cursor: pointer;
   color: #1a73e8;
 }
 
-button:hover {
-  text-decoration: underline;
-}
-
-/* ================= EDITOR ================= */
-
+/* ===== EDITOR ===== */
 textarea {
   width: 100%;
   height: 80vh;
-
   border: none;
   outline: none;
   resize: none;
 
   font-family: monospace;
   font-size: 16px;
-  line-height: 1.6;
 }
 
-/* ================= MARKDOWN ================= */
-
-pre {
-  white-space: pre-wrap;
-}
-
-code {
-  font-family: monospace;
-  font-size: 0.95em;
-}
+/* ===== MARKDOWN ===== */
+pre { white-space: pre-wrap; }
 `;
 }
 
 // =========================================================
 // ================= HTML WRAPPER ==========================
 // =========================================================
-function html(c) {
+function html(c, rightUI = "") {
   return new Response(`
 <!doctype html>
 <html>
 <head>
 <meta charset="utf-8">
+<link rel="icon" href="/favicon.svg">
 <style>${baseCSS()}</style>
 </head>
+
 <body>
+
+<div class="topbar">
+  <a href="/" class="logo">
+    <img src="/logo.svg">
+  </a>
+
+  <div class="nav">
+    ${rightUI}
+  </div>
+</div>
+
 ${c}
+
 </body>
 </html>
 `, {
@@ -139,7 +122,7 @@ const file = (slug) => slug + ".md";
 const INDEX_KEY = "index.json";
 
 // =========================================================
-// ================= INDEX STORAGE =========================
+// ================= INDEX ================================
 // =========================================================
 async function getIndex(env) {
   const obj = await env.PAGES.get(INDEX_KEY);
@@ -151,7 +134,7 @@ async function saveIndex(env, index) {
 }
 
 // =========================================================
-// ================= FRONTMATTER PARSER ===================
+// ================= PARSER ===============================
 // =========================================================
 function parse(md = "") {
   const m = md.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
@@ -172,7 +155,7 @@ function parse(md = "") {
 }
 
 // =========================================================
-// ================= R2 HELPERS ============================
+// ================= R2 ================================
 // =========================================================
 async function getFile(env, slug) {
   const obj = await env.PAGES.get(file(slug));
@@ -184,7 +167,7 @@ async function putFile(env, slug, content) {
 }
 
 // =========================================================
-// ================= SAVE PAGE =============================
+// ================= SAVE ================================
 // =========================================================
 async function savePage(env, slug, content) {
   await putFile(env, slug, content);
@@ -193,7 +176,6 @@ async function savePage(env, slug, content) {
   const title = parsed.title || slug;
 
   let index = await getIndex(env);
-
   const existing = index.find(i => i.slug === slug);
 
   if (existing) {
@@ -206,19 +188,17 @@ async function savePage(env, slug, content) {
 }
 
 // =========================================================
-// ================= API LIST ==============================
+// ================= API ================================
 // =========================================================
 async function list(env) {
-  const index = await getIndex(env);
-  return Array.isArray(index) ? index : [];
+  return await getIndex(env);
 }
 
 // =========================================================
 // ================= INDEX PAGE ============================
 // =========================================================
 const INDEX = `
-<h1>Indexmmod Fashion and Art</h1>
-<a href="/new">+ New</a>
+<h1>Indexmod Fashion and Art</h1>
 
 <div id="list">loading...</div>
 
@@ -242,19 +222,14 @@ fetch("/_list")
     el.appendChild(a);
     el.appendChild(document.createElement("br"));
   });
-})
-.catch(() => {
-  document.getElementById("list").innerHTML = "error loading index";
 });
 </script>
 `;
 
 // =========================================================
-// ================= VIEW PAGE =============================
+// ================= VIEW ================================
 // =========================================================
 const VIEW = `
-<button id="edit">Edit</button>
-
 <h1 id="t"></h1>
 <div id="c"></div>
 
@@ -267,13 +242,7 @@ fetch("/_get/" + slug)
 .then(r => r.json())
 .then(d => {
   document.getElementById("t").innerText = d.title || slug;
-
-  // 🔥 ВОТ ГЛАВНОЕ
-  document.getElementById("c").innerHTML =
-    marked.parse(d.content || "");
-
-  document.getElementById("edit").onclick = () =>
-    location.href = "/edit/" + slug;
+  document.getElementById("c").innerHTML = marked.parse(d.content || "");
 });
 </script>
 `;
@@ -282,9 +251,7 @@ fetch("/_get/" + slug)
 // ================= EDITOR ================================
 // =========================================================
 const EDITOR = `
-<button onclick="save()">Save</button>
-
-<textarea id="md" style="width:100%;height:90vh;"></textarea>
+<textarea id="md"></textarea>
 
 <script>
 const slug = location.pathname.split("/").filter(Boolean).pop();
@@ -299,8 +266,7 @@ Write here...
 
 async function load() {
   if (location.pathname === "/new") {
-    document.getElementById("md").value =
-      tpl("New page", "new-page");
+    document.getElementById("md").value = tpl("New page", "new-page");
     return;
   }
 
@@ -323,12 +289,11 @@ async function save() {
     (md.match(/slug:\\s*(.*)/)?.[1] || "")
       .trim()
       .toLowerCase()
-      .replace(/[^a-z0-9-]/g, "-")
-      || "untitled";
+      .replace(/[^a-z0-9-]/g, "-") || "untitled";
 
   await fetch("/_save", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {"Content-Type":"application/json"},
     body: JSON.stringify({ slug, content: md })
   });
 
@@ -349,7 +314,6 @@ export default {
 
     try {
 
-      // ---------------- API ----------------
       if (p === "/_list") {
         return new Response(JSON.stringify(await list(env)), {
           headers: { "Content-Type": "application/json" }
@@ -361,10 +325,7 @@ export default {
         const md = await getFile(env, slug);
 
         if (!md) {
-          return new Response(JSON.stringify({ error: "not found" }), {
-            status: 404,
-            headers: { "Content-Type": "application/json" }
-          });
+          return new Response(JSON.stringify({ error: "not found" }), { status: 404 });
         }
 
         return new Response(JSON.stringify(parse(md)), {
@@ -378,11 +339,13 @@ export default {
         return new Response("ok");
       }
 
-      // ---------------- UI ----------------
-      if (p === "/") return html(INDEX);
-      if (p === "/new") return html(EDITOR);
-      if (p.startsWith("/edit/")) return html(EDITOR);
-      if (p.startsWith("/") && !p.startsWith("/_")) return html(VIEW);
+      // UI
+      if (p === "/") return html(INDEX, `<a href="/new">New</a>`);
+      if (p === "/new") return html(EDITOR, `<button onclick="save()">Save</button>`);
+      if (p.startsWith("/edit/")) return html(EDITOR, `<button onclick="save()">Save</button>`);
+      if (p.startsWith("/") && !p.startsWith("/_")) {
+        return html(VIEW, `<a href="/edit/${p.slice(1)}">Edit</a>`);
+      }
 
       return new Response("404", { status: 404 });
 
