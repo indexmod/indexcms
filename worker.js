@@ -3,36 +3,111 @@
 // =========================================================
 function baseCSS() {
   return `
-body {
-  font-family: system-ui, -apple-system, sans-serif;
-  font-size: 20px;
-  line-height: 1.6;
-  background: #fff;
-  color: #000;
-  margin: 0;
-  padding: 40px;
+/* ================= RESET ================= */
+
+* {
+  box-sizing: border-box;
 }
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+/* ================= LAYOUT ================= */
+
+body {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 22px;
+  line-height: 1.75;
+  color: #000;
+  background: #fff;
+
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 80px 24px;
+}
+
+/* ================= TYPOGRAPHY ================= */
+
+h1 {
+  font-size: 42px;
+  font-weight: normal;
+  margin: 0 0 32px;
+}
+
+h2 {
+  font-size: 30px;
+  font-weight: normal;
+  margin: 48px 0 16px;
+}
+
+h3 {
+  font-size: 24px;
+  font-weight: normal;
+  margin: 32px 0 12px;
+}
+
+p {
+  margin: 16px 0;
+}
+
+ul {
+  padding-left: 24px;
+  margin: 16px 0;
+}
+
+li {
+  margin: 6px 0;
+}
+
+/* ================= LINKS ================= */
 
 a {
   color: #1a73e8;
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 a:hover {
-  color: #1558b0;
+  text-decoration: underline;
 }
+
+/* ================= UI (минимально) ================= */
 
 button {
-  font: inherit;
-  border: 1px solid #000;
-  background: #fff;
-  padding: 6px 10px;
+  all: unset;
   cursor: pointer;
+  color: #1a73e8;
 }
 
-pre, textarea {
+button:hover {
+  text-decoration: underline;
+}
+
+/* ================= EDITOR ================= */
+
+textarea {
+  width: 100%;
+  height: 80vh;
+
+  border: none;
+  outline: none;
+  resize: none;
+
   font-family: monospace;
   font-size: 16px;
+  line-height: 1.6;
+}
+
+/* ================= MARKDOWN ================= */
+
+pre {
+  white-space: pre-wrap;
+}
+
+code {
+  font-family: monospace;
+  font-size: 0.95em;
 }
 `;
 }
