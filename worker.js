@@ -90,7 +90,6 @@ function parse(md = "") {
   });
 
   return {
-    id: fm.id || "",
     title: fm.title || "",
     slug: fm.slug || "",
     content: m[2]
@@ -212,13 +211,13 @@ const EDITOR = `
 <script>
 const slug = location.pathname.split("/").filter(Boolean).pop();
 
-const tpl = (title, slug) => `---
-title: ${title}
-slug: ${slug}
+const tpl = (title, slug) => \`---
+title: \${title}
+slug: \${slug}
 ---
 
 Write here...
-`;
+\`;
 
 async function load() {
   if (location.pathname === "/new") {
@@ -232,7 +231,6 @@ async function load() {
 
   document.getElementById("md").value =
 \`---
-id: \${d.id || crypto.randomUUID()}
 title: \${d.title || slug}
 slug: \${slug}
 ---
