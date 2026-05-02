@@ -212,19 +212,18 @@ const EDITOR = `
 <script>
 const slug = location.pathname.split("/").filter(Boolean).pop();
 
-const tpl = (id, title, slug) => \`---
-id: \${id}
-title: \${title}
-slug: \${slug}
+const tpl = (title, slug) => `---
+title: ${title}
+slug: ${slug}
 ---
 
 Write here...
-\`;
+`;
 
 async function load() {
   if (location.pathname === "/new") {
     document.getElementById("md").value =
-      tpl(crypto.randomUUID(), "New page", "new-page");
+      tpl("New page", "new-page");
     return;
   }
 
