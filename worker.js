@@ -6,7 +6,6 @@ function baseCSS() {
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 
-/* ===== LAYOUT ===== */
 body {
   font-family: Georgia, "Times New Roman", serif;
   font-size: 22px;
@@ -19,7 +18,6 @@ body {
   padding: 100px 24px 80px;
 }
 
-/* ===== TOP BAR ===== */
 .topbar {
   position: fixed;
   top: 0;
@@ -34,49 +32,34 @@ body {
   padding: 0 20px;
 }
 
-.logo img {
-  height: 28px;
-}
+.logo img { height: 28px; }
+.nav { display: flex; gap: 16px; }
 
-.nav {
-  display: flex;
-  gap: 16px;
-}
-
-/* ===== TYPO ===== */
 h1 { font-size: 42px; margin: 0 0 32px; font-weight: normal; }
 h2 { font-size: 30px; margin: 48px 0 16px; font-weight: normal; }
-p { margin: 16px 0; }
 
+p { margin: 16px 0; }
 ul { padding-left: 24px; }
 
-/* ===== LINKS ===== */
-a {
-  color: #1a73e8;
-  text-decoration: none;
-}
+a { color: #1a73e8; text-decoration: none; }
 a:hover { text-decoration: underline; }
 
-/* ===== BUTTONS ===== */
 button {
   all: unset;
   cursor: pointer;
   color: #1a73e8;
 }
 
-/* ===== EDITOR ===== */
 textarea {
   width: 100%;
   height: 80vh;
   border: none;
   outline: none;
   resize: none;
-
   font-family: monospace;
   font-size: 16px;
 }
 
-/* ===== MARKDOWN ===== */
 pre { white-space: pre-wrap; }
 `;
 }
@@ -90,9 +73,7 @@ function html(c, rightUI = "") {
 <html>
 <head>
 <meta charset="utf-8">
-
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-
 <style>${baseCSS()}</style>
 </head>
 
@@ -102,10 +83,7 @@ function html(c, rightUI = "") {
   <a href="/" class="logo">
     <img src="/logo.svg">
   </a>
-
-  <div class="nav">
-    ${rightUI}
-  </div>
+  <div class="nav">${rightUI}</div>
 </div>
 
 ${c}
@@ -121,22 +99,9 @@ ${c}
 // ================= STORAGE ===============================
 // =========================================================
 const file = (slug) => slug + ".md";
-const INDEX_KEY = "index.json";
 
 // =========================================================
-// ================= INDEX ================================
-// =========================================================
-async function getIndex(env) {
-  const obj = await env.PAGES.get(INDEX_KEY);
-  return obj ? JSON.parse(await obj.text()) : [];
-}
-
-async function saveIndex(env, index) {
-  await env.PAGES.put(INDEX_KEY, JSON.stringify(index || [], null, 2));
-}
-
-// =========================================================
-// ================= PARSER ===============================
+// ================= PARSER ================================
 // =========================================================
 function parse(md = "") {
   const m = md.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
@@ -157,7 +122,7 @@ function parse(md = "") {
 }
 
 // =========================================================
-// ================= R2 ================================
+// ================= R2 HELPERS ============================
 // =========================================================
 async function getFile(env, slug) {
   const obj = await env.PAGES.get(file(slug));
@@ -173,31 +138,38 @@ async function putFile(env, slug, content) {
 // =========================================================
 async function savePage(env, slug, content) {
   await putFile(env, slug, content);
-
-  const parsed = parse(content);
-  const title = parsed.title || slug;
-
-  let index = await getIndex(env);
-  const existing = index.find(i => i.slug === slug);
-
-  if (existing) {
-    existing.title = title;
-  } else {
-    index.push({ slug, title });
-  }
-
-  await saveIndex(env, index);
 }
 
 // =========================================================
-// ================= API ================================
+// ================= LIST (NO INDEX.JSON) =================
 // =========================================================
 async function list(env) {
-  return await getIndex(env);
+  const res = await env.PAGES.list();
+
+  const pages = await Promise.all(
+    res.objects
+      .filter(o => o.key.endsWith(".md"))
+      .map(async o => {
+        const slug = o.key.replace(".md", "");
+
+        const md = await getFile(env, slug);
+        const parsed = parse(md);
+
+        return {
+          slug,
+          title: parsed.title || slug
+        };
+      })
+  );
+
+  // сортировка по алфавиту
+  pages.sort((a, b) => a.title.localeCompare(b.title));
+
+  return pages;
 }
 
 // =========================================================
-// ================= ASSETS FIX ==========================
+// ================= ASSETS ===============================
 // =========================================================
 async function serveAsset(env, name, type) {
   const obj = await env.PAGES.get(name);
@@ -331,16 +303,9 @@ export default {
 
     try {
 
-      // ===== FIXED ASSETS =====
-      if (p === "/logo.svg") {
-        return serveAsset(env, "logo.svg", "image/svg+xml");
-      }
+      if (p === "/logo.svg") return serveAsset(env, "logo.svg", "image/svg+xml");
+      if (p === "/favicon.svg") return serveAsset(env, "favicon.svg", "image/svg+xml");
 
-      if (p === "/favicon.svg") {
-        return serveAsset(env, "favicon.svg", "image/svg+xml");
-      }
-
-      // ===== API =====
       if (p === "/_list") {
         return new Response(JSON.stringify(await list(env)), {
           headers: { "Content-Type": "application/json" }
@@ -366,7 +331,6 @@ export default {
         return new Response("ok");
       }
 
-      // ===== UI =====
       if (p === "/") return html(INDEX, `<a href="/new">New</a>`);
       if (p === "/new") return html(EDITOR, `<button onclick="save()">Save</button>`);
       if (p.startsWith("/edit/")) return html(EDITOR, `<button onclick="save()">Save</button>`);
