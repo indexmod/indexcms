@@ -191,9 +191,8 @@ th, td {
      padding: 12px 16px;
      margin-top: 80px;
 
-     border: 1px solid #a855f7; /* сиреневая рамка */
-     border-radius: 25px;
-
+     border: 1px dotted rgba(168, 85, 247, 0.5);
+     border-radius: 30px;
      font-family: monospace;
    }
 
