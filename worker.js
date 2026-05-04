@@ -40,24 +40,22 @@ body {
 .logo {
   display: inline-flex;
   align-items: center;
-  padding: 20px 0; /* воздух вокруг */
+  padding: 50px 0; /* воздух вокруг */
 }
 
 .logo img {
-  height: 150px;              /* размер */
+  height: 150px;
   display: block;
   transform-origin: center;
-  transition: transform 0.25s ease;
+
+  /* постоянная анимация */
+  animation: pulse 4s infinite ease-in-out;
 }
 
-/* пульсация */
-.logo img:hover {
-  animation: pulse 1.2s infinite ease-in-out;
-}
-
+/* мягкое дыхание */
 @keyframes pulse {
   0%   { transform: scale(1); }
-  50%  { transform: scale(1.06); }
+  50%  { transform: scale(1.04); }
   100% { transform: scale(1); }
 }
 
