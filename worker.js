@@ -180,6 +180,47 @@ th, td {
        font-size: 32px;
      }
    }
+   /* ===== FOOTER ===== */
+
+.site-footer {
+  margin-top: 80px;
+  padding-top: 40px;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.footer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  text-decoration: none !important;
+  color: #a855f7 !important; /* сиреневый */
+  font-size: 16px;
+}
+
+/* override любых глобальных ссылок */
+.footer-link,
+.footer-link:visited,
+.footer-link:hover,
+.footer-link:active {
+  color: #a855f7 !important;
+  text-decoration: none !important;
+}
+
+.footer-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #a855f7;
+  display: inline-block;
+  opacity: 0.9;
+}
+
+.footer-text {
+  font-weight: 400;
+}
 `;
 }
 
@@ -206,7 +247,12 @@ function html(c, rightUI = "") {
 </div>
 
 ${c}
-
+<footer class="site-footer">
+  <a class="footer-link" href="https://mod.indexmod.press">
+    <span class="footer-dot"></span>
+    <span class="footer-text">Chat at Mod by Indexmod</span>
+  </a>
+</footer>
 </body>
 </html>
 `, {
