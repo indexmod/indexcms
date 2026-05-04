@@ -144,9 +144,9 @@ th, td {
 
 /* ===== LETTER SECTION ===== */
 .letter {
-  font-size: 80px;
+  font-size: 90px;
   margin: 20px 0 10px;
-  font-weight: bold;
+  font-weight: normal;
 }
 
 /* ===== COLUMN LINKS ===== */
