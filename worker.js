@@ -42,10 +42,10 @@ body {
 
 .logo {
  display: inline-flex;
- align-items: center;
+ align-items: left;
 
  /* воздух вокруг логотипа */
- padding: 30px 0;
+ padding: 0px 0;
 }
 
 .logo img {
