@@ -354,15 +354,7 @@ fetch("/_get/" + slug)
 .then(r => r.json())
 .then(d => {
   document.getElementById("t").innerText = d.title || slug;
-  function autoImages(md) {
-  return md.replace(
-    /(^|\s)(https?:\/\/[^\s]+?\.(jpg|jpeg|png|gif|webp|svg))(\s|$)/gi,
-    '$1![]($2)$4'
-  );
-}
-
-const processed = autoImages(d.content || "");
-document.getElementById("c").innerHTML = marked.parse(processed);
+  document.getElementById("c").innerHTML = marked.parse(d.content || "");
 });
 </script>
 `;
