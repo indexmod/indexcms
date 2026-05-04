@@ -356,11 +356,20 @@ fetch("/_get/" + slug)
 .then(r => r.json())
 .then(d => {
   document.getElementById("t").innerText = d.title || slug;
-  document.getElementById("c").innerHTML = marked.parse(d.content || "");
+
+  const container = document.getElementById("c");
+
+  // ===== MARKDOWN RENDER =====
+  container.innerHTML = marked.parse(d.content || "");
+
+  // ===== FOOTNOTE TRANSFORM (SAFE SIMPLE VERSION) =====
+  container.innerHTML = container.innerHTML.replace(
+    /\\[(\\d+)\\]/g,
+    '<span class="fn">[$1]</span>'
+  );
 });
 </script>
 `;
-
 // =========================================================
 // ================= EDITOR ================================
 const EDITOR = `
