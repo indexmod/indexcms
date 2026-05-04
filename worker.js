@@ -8,48 +8,53 @@ function baseCSS() {
 html, body { margin: 0; padding: 0; }
 
 /* ===== BODY ===== */
-body {
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 22px;
-  line-height: 1.75;
-  color: #000;
-  background: #fff;
 
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 120px 32px 80px;
+body {
+ font-family: Georgia, "Times New Roman", serif;
+ font-size: 22px;
+ line-height: 1.75;
+
+ color: #000;
+ background: #fff;
+
+ /* 📐 сетка страницы */
+ max-width: 1100px;
+ margin: 0 auto;
+
+ /* 🔥 критично: воздух всей системы */
+ padding: 140px 40px 100px;
 }
 
 /* ===== TOPBAR ===== */
+
 .topbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 70px;
+ position: relative;
 
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+ display: flex;
+ align-items: center;
+ justify-content: space-between;
 
-  padding: 0 24px;
+ padding: 40px 0 20px;
+ margin-bottom: 40px;
 }
 
 /* ===== LOGO CONTROL ===== */
 
 .logo {
-  display: inline-flex;
-  align-items: center;
-  padding: 50px 0; /* воздух вокруг */
+ display: inline-flex;
+ align-items: center;
+
+ /* воздух вокруг логотипа */
+ padding: 30px 0;
 }
 
 .logo img {
-  height: 150px;
-  display: block;
-  transform-origin: center;
+ height: 150px;
+ display: block;
+ transform-origin: center;
 
-  /* постоянная анимация */
-  animation: pulse 4s infinite ease-in-out;
+ /* постоянное дыхание */
+ animation: pulse 4s infinite ease-in-out;
 }
 
 /* мягкое дыхание */
