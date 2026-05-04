@@ -259,9 +259,6 @@ function html(c, rightUI = "") {
 </script>
 <noscript><div><img src="https://mc.yandex.ru/watch/109041768" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 <!-- /Yandex.Metrika counter -->
-
-
-
 </head>
 
 <body>
