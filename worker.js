@@ -134,6 +134,16 @@ th, td {
   vertical-align: top;
 }
 
+/* ===== FOOTNOTE STYLE ===== */
+
+.fn {
+  font-size: 0.7em;
+  vertical-align: super;
+  position: relative;
+  top: -0.2em;
+  margin-left: 2px;
+}
+
 /* ===== INDEX GRID ===== */
 
 .grid {
@@ -273,7 +283,7 @@ const INDEX = `
 <h1></h1>
 
 <div id="list">
-  <div id="preload">Loading topics…</div>
+  <div id="preload">Indexmod Fashion and Art (loading topics…)</div>
 </div>
 
 <script>
