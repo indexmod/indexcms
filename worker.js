@@ -99,9 +99,10 @@ pre { white-space: pre-wrap; }
 
 /* ===== MARKDOWN EXTENSIONS ===== */
 
-/* strong (жирный текст) */
+/* strong (зеленый текст) */
 strong {
-  font-weight: 700;
+  font-weight: 100;
+  color: green;
 }
 
 /* изображения из markdown */
