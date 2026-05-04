@@ -25,38 +25,6 @@ body {
  padding: 140px 40px 100px;
 }
 
-/* ===== STRONG ===== */
-
-strong {
- font-weight: 100;
-  color: green;
-}
-
-/* ===== IMAGES ===== */
-
-img {
- max-width: 100%;
- height: auto;
- display: block;
- margin: 20px 0;
-}
-
-/* ===== TABLES ===== */
-
-table {
- border-collapse: collapse;
- width: 100%;
- margin: 40px 0;
-}
-
-th, td {
- border: 1px solid #000;
- padding: 8px 10px;
- text-align: left;
- vertical-align: top;
-}
-
-
 /* ===== TOPBAR ===== */
 
 .topbar {
@@ -356,15 +324,7 @@ fetch("/_get/" + slug)
 .then(r => r.json())
 .then(d => {
   document.getElementById("t").innerText = d.title || slug;
-  function autoImages(md) {
-  return md.replace(
-    /(https?:\/\/[^\s]+?\.(jpg|jpeg|png|gif|webp|svg))/gi,
-    '![]($1)'
-  );
-}
-
-const processed = autoImages(d.content || "");
-document.getElementById("c").innerHTML = marked.parse(processed);
+  document.getElementById("c").innerHTML = marked.parse(d.content || "");
 });
 </script>
 `;
