@@ -98,20 +98,57 @@ textarea {
 pre { white-space: pre-wrap; }
 
 /* ===== INDEX GRID ===== */
+
 .grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 40px;
 }
 
+/* ===== LETTER SECTION ===== */
 .letter {
   font-size: 32px;
   margin: 20px 0 10px;
+  font-weight: normal;
 }
 
+/* ===== COLUMN LINKS ===== */
 .col a {
   display: block;
   margin: 6px 0;
+}
+
+/* =========================================================
+   📱 RESPONSIVE LAYER
+   ========================================================= */
+
+/* средние экраны (планшеты / ноутбуки) */
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px;
+  }
+
+  .letter {
+    font-size: 28px;
+  }
+}
+
+/* узкие экраны (мобилки) */
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .letter {
+    font-size: 24px;
+    margin: 16px 0 8px;
+  }
+
+  .col a {
+    margin: 8px 0;
+  }
 }
 `;
 }
