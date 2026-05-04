@@ -146,7 +146,7 @@ th, td {
 .letter {
   font-size: 50px;
   margin: 20px 0 10px;
-  font-weight: normal;
+  font-weight: bold;
 }
 
 /* ===== COLUMN LINKS ===== */
