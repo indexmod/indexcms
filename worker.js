@@ -159,34 +159,17 @@ th, td {
    📱 RESPONSIVE LAYER
    ========================================================= */
 
-/* средние экраны (планшеты / ноутбуки) */
-@media (max-width: 1024px) {
-  .grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 32px;
-  }
+   @media (max-width: 1024px) {
+     .letter {
+       font-size: 42px;
+     }
+   }
 
-  .letter {
-    font-size: 28px;
-  }
-}
-
-/* узкие экраны (мобилки) */
-@media (max-width: 640px) {
-  .grid {
-    grid-template-columns: 1fr;
-    gap: 24px;
-  }
-
-  .letter {
-    font-size: 24px;
-    margin: 16px 0 8px;
-  }
-
-  .col a {
-    margin: 8px 0;
-  }
-}
+   @media (max-width: 640px) {
+     .letter {
+       font-size: 32px;
+     }
+   }
 `;
 }
 
