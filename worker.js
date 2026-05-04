@@ -359,14 +359,31 @@ fetch("/_get/" + slug)
 
   const container = document.getElementById("c");
 
-  // ===== MARKDOWN RENDER =====
-  container.innerHTML = marked.parse(d.content || "");
+  // ===============================
+  // MARKDOWN → HTML
+  // ===============================
+  let html = marked.parse(d.content || "");
 
-  // ===== FOOTNOTE TRANSFORM (SAFE SIMPLE VERSION) =====
-  container.innerHTML = container.innerHTML.replace(
+  // ===============================
+  // AUTO IMAGE LINKS
+  // ===============================
+  html = html.replace(
+    /(^|\\s)(https?:\\/\\/[^\\s]+?\\.(jpg|jpeg|png|gif|webp|svg))(\\s|$)/gi,
+    '$1<img src="$2" style="max-width:100%;display:block;margin:20px 0;">$4'
+  );
+
+  // ===============================
+  // FOOTNOTES [1]
+  // ===============================
+  html = html.replace(
     /\\[(\\d+)\\]/g,
     '<span class="fn">[$1]</span>'
   );
+
+  // ===============================
+  // RENDER
+  // ===============================
+  container.innerHTML = html;
 });
 </script>
 `;
@@ -384,6 +401,23 @@ slug: \${slug}
 ---
 
 Write here...
+
+https://images.unsplash.com/photo-1520975916090-3105956dac38
+
+
+## Basic markup
+
+**bold text**
+
+*italic text*
+
+- list item 1
+- list item 2
+
+## Footnote example
+
+Text with reference [1]
+
 \`;
 
 async function load() {
