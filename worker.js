@@ -37,7 +37,7 @@ body {
 
 /* ===== LOGO CONTROL ===== */
 .logo img {
-  height: 32px;              /* размер */
+  height: 150px;              /* размер */
   transition: transform 0.3s ease;
 }
 
