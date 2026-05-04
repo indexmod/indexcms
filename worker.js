@@ -199,7 +199,9 @@ th, td {
 
   text-decoration: none !important;
   color: #a855f7 !important; /* сиреневый */
-  font-size: 30px;
+  font-size: 17px;
+
+  font-family: monospace;
 }
 
 /* override любых глобальных ссылок */
