@@ -145,7 +145,7 @@ th, td {
 
 /* ===== LETTER SECTION ===== */
 .letter {
-  font-size: 32px;
+  font-size: 50px;
   margin: 20px 0 10px;
   font-weight: normal;
 }
