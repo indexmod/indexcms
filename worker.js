@@ -25,31 +25,33 @@ body {
  padding: 100px 40px 100px;
 }
 
-/* ===== TOPBAR ===== */
-
 .topbar {
- position: relative;
+  position: relative;
 
- display: flex;
- align-items: center;
- justify-content: space-between;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
 
- padding: 20px 0 20px;
- margin-bottom: 40px;
+  padding: 0;
+  margin-bottom: 40px;
 }
 
 /* ===== LOGO CONTROL ===== */
 
 .logo {
- display: inline-flex;
- align-items: left;
+  display: inline-flex;
+  align-items: flex-start;
 
- /* воздух вокруг логотипа */
- padding: 0px 0;
+  padding: 0;
+  margin: 0;
+}
+
+.logo {
+  margin-left: 0;
 }
 
 .logo img {
- height: 300px;
+ height: 250px;
  display: block;
  transform-origin: center;
 
