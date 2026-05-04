@@ -184,25 +184,29 @@ th, td {
    }
    /* ===== FOOTER ===== */
 
-.site-footer {
-  margin-top: 80px;
-  padding-top: 40px;
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-}
+   .site-footer {
+     display: inline-flex;
+     align-items: center;
 
-.footer-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
+     padding: 12px 16px;
+     margin-top: 80px;
 
-  text-decoration: none !important;
-  color: #a855f7 !important; /* сиреневый */
-  font-size: 17px;
+     border: 1px solid #a855f7; /* сиреневая рамка */
+     border-radius: 12px;
 
-  font-family: monospace;
-}
+     font-family: monospace;
+   }
+
+   .footer-link {
+     display: inline-flex;
+     align-items: center;
+     gap: 10px;
+
+     text-decoration: none !important;
+     color: #a855f7 !important;
+     font-size: 15px;
+     font-family: monospace;
+   }
 
 /* override любых глобальных ссылок */
 .footer-link,
