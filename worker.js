@@ -3,9 +3,11 @@
 // =========================================================
 function baseCSS() {
   return `
+/* ===== RESET ===== */
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 
+/* ===== BODY ===== */
 body {
   font-family: Georgia, "Times New Roman", serif;
   font-size: 22px;
@@ -13,30 +15,49 @@ body {
   color: #000;
   background: #fff;
 
-  max-width: 720px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 100px 24px 80px;
+  padding: 120px 32px 80px;
 }
 
+/* ===== TOPBAR ===== */
 .topbar {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  height: 60px;
+  height: 70px;
 
   display: flex;
   align-items: center;
   justify-content: space-between;
 
-  padding: 0 20px;
+  padding: 0 24px;
 }
 
-.logo img { height: 28px; }
-.nav { display: flex; gap: 16px; }
+/* ===== LOGO CONTROL ===== */
+.logo img {
+  height: 32px;              /* размер */
+  transition: transform 0.3s ease;
+}
 
-h1 { font-size: 42px; margin: 0 0 32px; font-weight: normal; }
-h2 { font-size: 30px; margin: 48px 0 16px; font-weight: normal; }
+/* пульсация */
+.logo img:hover {
+  animation: pulse 1.2s infinite;
+}
+
+@keyframes pulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+/* ===== NAV ===== */
+.nav { display: flex; gap: 18px; }
+
+/* ===== TYPO ===== */
+h1 { font-size: 48px; margin: 0 0 40px; font-weight: normal; }
+h2 { font-size: 28px; margin: 40px 0 10px; font-weight: normal; }
 
 p { margin: 16px 0; }
 ul { padding-left: 24px; }
@@ -50,6 +71,7 @@ button {
   color: #1a73e8;
 }
 
+/* ===== EDITOR ===== */
 textarea {
   width: 100%;
   height: 80vh;
@@ -60,7 +82,25 @@ textarea {
   font-size: 16px;
 }
 
+/* ===== CONTENT ===== */
 pre { white-space: pre-wrap; }
+
+/* ===== INDEX GRID ===== */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+}
+
+.letter {
+  font-size: 32px;
+  margin: 20px 0 10px;
+}
+
+.col a {
+  display: block;
+  margin: 6px 0;
+}
 `;
 }
 
@@ -97,12 +137,10 @@ ${c}
 
 // =========================================================
 // ================= STORAGE ===============================
-// =========================================================
 const file = (slug) => slug + ".md";
 
 // =========================================================
 // ================= PARSER ================================
-// =========================================================
 function parse(md = "") {
   const m = md.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
   if (!m) return { title: "", slug: "", content: md };
@@ -122,8 +160,7 @@ function parse(md = "") {
 }
 
 // =========================================================
-// ================= R2 HELPERS ============================
-// =========================================================
+// ================= R2 ====================================
 async function getFile(env, slug) {
   const obj = await env.PAGES.get(file(slug));
   return obj ? await obj.text() : null;
@@ -133,16 +170,12 @@ async function putFile(env, slug, content) {
   await env.PAGES.put(file(slug), content);
 }
 
-// =========================================================
-// ================= SAVE ================================
-// =========================================================
 async function savePage(env, slug, content) {
   await putFile(env, slug, content);
 }
 
 // =========================================================
-// ================= LIST (NO INDEX.JSON) =================
-// =========================================================
+// ================= LIST ================================
 async function list(env) {
   const res = await env.PAGES.list();
 
@@ -151,7 +184,6 @@ async function list(env) {
       .filter(o => o.key.endsWith(".md"))
       .map(async o => {
         const slug = o.key.replace(".md", "");
-
         const md = await getFile(env, slug);
         const parsed = parse(md);
 
@@ -162,54 +194,67 @@ async function list(env) {
       })
   );
 
-  // сортировка по алфавиту
   pages.sort((a, b) => a.title.localeCompare(b.title));
-
   return pages;
 }
 
 // =========================================================
-// ================= ASSETS ===============================
-// =========================================================
-async function serveAsset(env, name, type) {
-  const obj = await env.PAGES.get(name);
-  if (!obj) return new Response("not found", { status: 404 });
-
-  return new Response(await obj.arrayBuffer(), {
-    headers: {
-      "Content-Type": type,
-      "Cache-Control": "public, max-age=86400"
-    }
-  });
-}
-
-// =========================================================
-// ================= INDEX PAGE ============================
-// =========================================================
+// ================= INDEX ================================
 const INDEX = `
-<h1>Indexmod Fashion and Art</h1>
+<h1>Indexmod</h1>
 
-<div id="list">loading...</div>
+<div id="list"></div>
 
 <script>
 fetch("/_list")
 .then(r => r.json())
 .then(items => {
-  const el = document.getElementById("list");
-  el.innerHTML = "";
+  const container = document.getElementById("list");
 
   if (!items.length) {
-    el.innerHTML = "no pages yet";
+    container.innerHTML = "no pages yet";
     return;
   }
 
+  // группировка по первой букве
+  const groups = {};
   items.forEach(p => {
-    const a = document.createElement("a");
-    a.href = "/" + p.slug;
-    a.textContent = p.title || p.slug;
+    const letter = (p.title[0] || "#").toUpperCase();
+    if (!groups[letter]) groups[letter] = [];
+    groups[letter].push(p);
+  });
 
-    el.appendChild(a);
-    el.appendChild(document.createElement("br"));
+  const letters = Object.keys(groups).sort();
+
+  // делим на 3 колонки
+  const cols = [[], [], []];
+  letters.forEach((l, i) => {
+    cols[i % 3].push(l);
+  });
+
+  container.innerHTML = '<div class="grid"></div>';
+  const grid = container.firstChild;
+
+  cols.forEach(colLetters => {
+    const col = document.createElement("div");
+    col.className = "col";
+
+    colLetters.forEach(letter => {
+      const h = document.createElement("div");
+      h.className = "letter";
+      h.textContent = letter;
+
+      col.appendChild(h);
+
+      groups[letter].forEach(p => {
+        const a = document.createElement("a");
+        a.href = "/" + p.slug;
+        a.textContent = p.title;
+        col.appendChild(a);
+      });
+    });
+
+    grid.appendChild(col);
   });
 });
 </script>
@@ -217,7 +262,6 @@ fetch("/_list")
 
 // =========================================================
 // ================= VIEW ================================
-// =========================================================
 const VIEW = `
 <h1 id="t"></h1>
 <div id="c"></div>
@@ -238,7 +282,6 @@ fetch("/_get/" + slug)
 
 // =========================================================
 // ================= EDITOR ================================
-// =========================================================
 const EDITOR = `
 <textarea id="md"></textarea>
 
@@ -295,7 +338,6 @@ load();
 
 // =========================================================
 // ================= ROUTER ================================
-// =========================================================
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
@@ -303,8 +345,8 @@ export default {
 
     try {
 
-      if (p === "/logo.svg") return serveAsset(env, "logo.svg", "image/svg+xml");
-      if (p === "/favicon.svg") return serveAsset(env, "favicon.svg", "image/svg+xml");
+      if (p === "/logo.svg") return new Response(await (await env.PAGES.get("logo.svg")).arrayBuffer(), { headers: { "Content-Type": "image/svg+xml" }});
+      if (p === "/favicon.svg") return new Response(await (await env.PAGES.get("favicon.svg")).arrayBuffer(), { headers: { "Content-Type": "image/svg+xml" }});
 
       if (p === "/_list") {
         return new Response(JSON.stringify(await list(env)), {
