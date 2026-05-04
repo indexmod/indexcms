@@ -34,7 +34,7 @@ body {
  align-items: center;
  justify-content: space-between;
 
- padding: 40px 0 20px;
+ padding: 20px 0 20px;
  margin-bottom: 40px;
 }
 
