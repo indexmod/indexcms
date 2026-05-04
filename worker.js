@@ -192,7 +192,7 @@ th, td {
      margin-top: 80px;
 
      border: 1px solid #a855f7; /* сиреневая рамка */
-     border-radius: 12px;
+     border-radius: 17px;
 
      font-family: monospace;
    }
