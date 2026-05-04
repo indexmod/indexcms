@@ -36,19 +36,28 @@ body {
 }
 
 /* ===== LOGO CONTROL ===== */
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  padding: 20px 0; /* воздух вокруг */
+}
+
 .logo img {
   height: 150px;              /* размер */
-  transition: transform 0.3s ease;
+  display: block;
+  transform-origin: center;
+  transition: transform 0.25s ease;
 }
 
 /* пульсация */
 .logo img:hover {
-  animation: pulse 1.2s infinite;
+  animation: pulse 1.2s infinite ease-in-out;
 }
 
 @keyframes pulse {
   0%   { transform: scale(1); }
-  50%  { transform: scale(1.08); }
+  50%  { transform: scale(1.06); }
   100% { transform: scale(1); }
 }
 
