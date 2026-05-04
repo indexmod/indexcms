@@ -97,6 +97,14 @@ textarea {
 /* ===== CONTENT ===== */
 pre { white-space: pre-wrap; }
 
+/* ===== PRELOAD ===== */
+
+#preload {
+  font-size: 20px;
+  opacity: 0.6;
+  margin: 20px 0;
+}
+
 /* ===== MARKDOWN EXTENSIONS ===== */
 
 /* strong (зеленый текст) */
@@ -282,7 +290,9 @@ async function list(env) {
 const INDEX = `
 <h1></h1>
 
-<div id="list"></div>
+<div id="list">
+  <div id="preload">Loading topics…</div>
+</div>
 
 <script>
 fetch("/_list")
