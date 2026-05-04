@@ -194,6 +194,8 @@ th, td {
      border: 1px dotted rgba(168, 85, 247, 0.5);
      border-radius: 30px;
      font-family: monospace;
+
+     margin-left: auto;   /* 🔥 прижимает вправо */
    }
 
    .footer-link {
@@ -335,7 +337,7 @@ const INDEX = `
 <h1></h1>
 
 <div id="list">
-  <div id="preload">Indexmod Fashion and Art (loading topics…)</div>
+  <div id="preload">Loading topics Indexmod Fashion and Art</div>
 </div>
 
 <script>
