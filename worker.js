@@ -97,6 +97,35 @@ textarea {
 /* ===== CONTENT ===== */
 pre { white-space: pre-wrap; }
 
+/* ===== MARKDOWN EXTENSIONS ===== */
+
+/* strong (жирный текст) */
+strong {
+  font-weight: 700;
+}
+
+/* изображения из markdown */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 20px 0;
+}
+
+/* таблицы */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 40px 0;
+}
+
+th, td {
+  border: 1px solid #000;
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
 /* ===== INDEX GRID ===== */
 
 .grid {
@@ -324,7 +353,15 @@ fetch("/_get/" + slug)
 .then(r => r.json())
 .then(d => {
   document.getElementById("t").innerText = d.title || slug;
-  document.getElementById("c").innerHTML = marked.parse(d.content || "");
+  function autoImages(md) {
+  return md.replace(
+    /(^|\s)(https?:\/\/[^\s]+?\.(jpg|jpeg|png|gif|webp|svg))(\s|$)/gi,
+    '$1![]($2)$4'
+  );
+}
+
+const processed = autoImages(d.content || "");
+document.getElementById("c").innerHTML = marked.parse(processed);
 });
 </script>
 `;
