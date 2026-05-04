@@ -100,8 +100,7 @@ pre { white-space: pre-wrap; }
 /* ===== PRELOAD ===== */
 
 #preload {
-  font-size: 20px;
-  opacity: 0.6;
+  font-size: 40px;
   margin: 20px 0;
 }
 
