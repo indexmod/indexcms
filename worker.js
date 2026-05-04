@@ -195,7 +195,9 @@ th, td {
      border-radius: 30px;
      font-family: monospace;
 
-     margin-left: auto;   /* 🔥 прижимает вправо */
+     display: block;
+     width: fit-content;
+     margin-left: auto;
    }
 
    .footer-link {
