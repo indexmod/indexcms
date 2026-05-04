@@ -22,7 +22,7 @@ body {
  margin: 0 auto;
 
  /* 🔥 критично: воздух всей системы */
- padding: 140px 40px 100px;
+ padding: 100px 40px 100px;
 }
 
 /* ===== TOPBAR ===== */
@@ -49,7 +49,7 @@ body {
 }
 
 .logo img {
- height: 150px;
+ height: 200px;
  display: block;
  transform-origin: center;
 
