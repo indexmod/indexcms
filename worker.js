@@ -199,7 +199,7 @@ th, td {
 
   text-decoration: none !important;
   color: #a855f7 !important; /* сиреневый */
-  font-size: 16px;
+  font-size: 30px;
 }
 
 /* override любых глобальных ссылок */
@@ -217,11 +217,10 @@ th, td {
   border-radius: 50%;
   background: #a855f7;
   display: inline-block;
-  opacity: 0.9;
 }
 
 .footer-text {
-  font-weight: 400;
+  font-weight: 900;
 }
 `;
 }
