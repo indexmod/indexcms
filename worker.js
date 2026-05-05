@@ -184,53 +184,61 @@ th, td {
    }
    /* ===== FOOTER ===== */
 
-   .site-footer {
-     display: inline-flex;
-     align-items: center;
+ .site-footer {
+   display: block;
+   width: fit-content;
+   margin-left: auto;
+   margin-top: 80px;
 
-     padding: 12px 16px;
-     margin-top: 80px;
+   padding: 12px 16px;
 
-     border: 1px dotted rgba(168, 85, 247, 0.5);
-     border-radius: 30px;
-     font-family: monospace;
+   background: #a855f7;
+   border: 1px dotted rgba(255, 255, 255, 0.55);
+   border-radius: 30px;
 
-     display: block;
-     width: fit-content;
-     margin-left: auto;
-   }
+   font-family: monospace;
+ }
 
-   .footer-link {
-     display: inline-flex;
-     align-items: center;
-     gap: 10px;
+ /* ссылка */
+ .footer-link {
+   display: inline-flex;
+   align-items: center;
+   gap: 10px;
 
-     text-decoration: none !important;
-     color: #a855f7 !important;
-     font-size: 12px;
-     font-family: monospace;
-   }
+   text-decoration: none !important;
+   color: #ffffff !important;
 
-/* override любых глобальных ссылок */
-.footer-link,
-.footer-link:visited,
-.footer-link:hover,
-.footer-link:active {
-  color: #a855f7 !important;
-  text-decoration: none !important;
-}
+   font-size: 12px;
+   font-family: monospace;
+ }
 
-.footer-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #a855f7;
-  display: inline-block;
-}
+ /* override любых глобальных ссылок */
+ .footer-link,
+ .footer-link:visited,
+ .footer-link:hover,
+ .footer-link:active {
+   color: #ffffff !important;
+   text-decoration: none !important;
+ }
 
-.footer-text {
-  font-weight: 900;
-}
+ /* DOT — инверсия + увеличение + подъём */
+ .footer-dot {
+   width: 10px;          /* было 8px → чуть крупнее */
+   height: 10px;
+
+   border-radius: 50%;
+   background: #ffffff;  /* инверсия */
+
+   display: inline-block;
+
+   transform: translateY(-2px); /* приподняли на полстроки */
+ }
+
+ /* текст */
+ .footer-text {
+   font-weight: 900;
+   color: #ffffff;
+ }
 `;
 }
 
@@ -282,7 +290,7 @@ function html(c, rightUI = "") {
 ${c}
 <footer class="site-footer">
   <a class="footer-link" href="https://mod.indexmod.press">
-    <sup><span class="footer-dot"></span></sup>
+    <span class="footer-dot"></span>
     <span class="footer-text">Mod</span>
   </a>
 </footer>
