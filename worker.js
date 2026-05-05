@@ -210,10 +210,10 @@ th, td {
    }
 
    .footer-dot {
-     width: 10px;
-     height: 10px;
+     width: 20px;
+     height: 20px;
      border-radius: 50%;
-     background: red;
+     background: silver;
      transform: translateY(-10px);
    }
 
