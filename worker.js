@@ -231,7 +231,7 @@ th, td {
 
    display: inline-block;
 
-   transform: translateY(-2px); /* приподняли на полстроки */
+   transform: translateY(-5px); /* приподняли на полстроки */
  }
 
  /* текст */
