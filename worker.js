@@ -197,28 +197,29 @@ th, td {
    .site-footer {
      margin-top: 80px;
      display: flex;
-     justify-content: flex-end; /* ← прижали вправо */
+     justify-content: flex-end;
    }
 
-/* футер использует те же правила, что и навигация */
-.site-footer a {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
+   .site-footer a {
+     display: inline-flex;
+     align-items: center;
+     gap: 10px;
 
-/* точка наследует цвет ссылки */
-.footer-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: currentColor;
-  transform: translateY(-10px);
-}
+     color: inherit;
+     text-decoration: none;
+   }
 
-.footer-text {
-  font-weight: 100;
-}
+   .footer-dot {
+     width: 10px;
+     height: 10px;
+     border-radius: 50%;
+     background: currentColor;
+     transform: translateY(-10px);
+   }
+
+   .footer-text {
+     font-weight: 100;
+   }
 `;
 }
 
