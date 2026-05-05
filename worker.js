@@ -301,7 +301,7 @@ ${c}
 <footer class="site-footer">
   <a class="footer-link" href="https://mod.indexmod.press">
     <span class="footer-dot"></span>
-    <span class="footer-text">20 лет!</span>
+    <span class="footer-text">20 лет</span>
   </a>
 </footer>
 </body>
