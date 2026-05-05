@@ -282,7 +282,7 @@ function html(c, rightUI = "") {
 ${c}
 <footer class="site-footer">
   <a class="footer-link" href="https://mod.indexmod.press">
-    <span class="footer-dot"></span>
+    <sup><span class="footer-dot"></span></sup>
     <span class="footer-text">Mod</span>
   </a>
 </footer>
