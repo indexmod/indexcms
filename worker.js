@@ -205,7 +205,7 @@ th, td {
      align-items: center;
      gap: 10px;
 
-     color: inherit;
+     color: #1a73e8;
      text-decoration: none;
    }
 
@@ -213,7 +213,7 @@ th, td {
      width: 10px;
      height: 10px;
      border-radius: 50%;
-     background: currentColor;
+     background: red;
      transform: translateY(-10px);
    }
 
