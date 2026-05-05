@@ -1,4 +1,298 @@
 // =========================================================
+// ================= CSS ENGINE ============================
+// =========================================================
+function baseCSS() {
+  return `
+/* ===== RESET ===== */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+/* ===== BODY ===== */
+
+body {
+ font-family: Georgia, "Times New Roman", serif;
+ font-size: 22px;
+ line-height: 1.75;
+
+ color: #000;
+ background: #fff;
+
+ /* 📐 сетка страницы */
+ max-width: 1100px;
+ margin: 0 auto;
+
+ /* 🔥 критично: воздух всей системы */
+ padding: 100px 40px 100px;
+}
+
+.topbar {
+  position: relative;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  padding: 0;
+  margin-bottom: 40px;
+}
+
+/* ===== LOGO CONTROL ===== */
+
+.logo {
+  display: inline-flex;
+  align-items: flex-start;
+
+  padding: 0;
+  margin: 0;
+}
+
+.logo {
+  margin-left: 0;
+}
+
+.logo img {
+ height: 250px;
+ display: block;
+ transform-origin: center;
+
+ /* постоянное дыхание */
+ animation: pulse 4s infinite ease-in-out;
+}
+
+/* мягкое дыхание */
+@keyframes pulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+
+/* ===== NAV ===== */
+.nav { display: flex; gap: 18px; }
+
+/* ===== TYPO ===== */
+h1 { font-size: 48px; margin: 0 0 40px; font-weight: normal; }
+h2 { font-size: 28px; margin: 40px 0 10px; font-weight: normal; }
+
+p { margin: 16px 0; }
+ul { padding-left: 24px; }
+
+a { color: #1a73e8; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+button {
+  all: unset;
+  cursor: pointer;
+  color: #1a73e8;
+}
+
+/* ===== EDITOR ===== */
+textarea {
+  width: 100%;
+  height: 80vh;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: monospace;
+  font-size: 16px;
+}
+
+/* ===== CONTENT ===== */
+pre { white-space: pre-wrap; }
+
+/* ===== PRELOAD ===== */
+
+#preload {
+  font-size: 40px;
+  margin: 20px 0;
+}
+
+/* ===== MARKDOWN EXTENSIONS ===== */
+
+/* strong (зеленый текст) */
+strong {
+  font-weight: 100;
+  color: green;
+}
+
+/* изображения из markdown */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 20px 0;
+}
+
+/* таблицы */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 40px 0;
+}
+
+th, td {
+  border: 1px solid #000;
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+/* ===== FOOTNOTE STYLE ===== */
+
+.fn {
+  font-size: 0.7em;
+  vertical-align: super;
+  position: relative;
+  top: -0.2em;
+  margin-left: 2px;
+}
+
+/* ===== INDEX GRID ===== */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+}
+
+/* ===== LETTER SECTION ===== */
+.letter {
+  font-size: 90px;
+  margin: 20px 0 10px;
+  font-weight: normal;
+}
+
+/* ===== COLUMN LINKS ===== */
+.col a {
+  display: block;
+  margin: 6px 0;
+}
+
+/* =========================================================
+   📱 RESPONSIVE LAYER
+   ========================================================= */
+
+   @media (max-width: 1024px) {
+     .letter {
+       font-size: 42px;
+     }
+   }
+
+   @media (max-width: 640px) {
+     .letter {
+       font-size: 32px;
+     }
+   }
+   /* ===== FOOTER ===== */
+
+   .site-footer {
+     display: inline-flex;
+     align-items: center;
+
+     padding: 12px 16px;
+     margin-top: 80px;
+
+     border: 1px dotted rgba(168, 85, 247, 0.5);
+     border-radius: 30px;
+     font-family: monospace;
+
+     display: block;
+     width: fit-content;
+     margin-left: auto;
+   }
+
+   .footer-link {
+     display: inline-flex;
+     align-items: center;
+     gap: 10px;
+
+     text-decoration: none !important;
+     color: #a855f7 !important;
+     font-size: 17px;
+     font-family: monospace;
+   }
+
+/* override любых глобальных ссылок */
+.footer-link,
+.footer-link:visited,
+.footer-link:hover,
+.footer-link:active {
+  color: #a855f7 !important;
+  text-decoration: none !important;
+}
+
+.footer-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #a855f7;
+  display: inline-block;
+}
+
+.footer-text {
+  font-weight: 900;
+}
+`;
+}
+
+// =========================================================
+// ================= HTML WRAPPER ==========================
+// =========================================================
+function html(c, rightUI = "") {
+  return new Response(`
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>${baseCSS()}</style>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="description" content="Indexmod — evolving fashion and art encyclopedia">
+
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Indexmod Fashion and Art">
+
+<meta name="twitter:card" content="summary_large_image">
+
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+    (function(m,e,t,r,i,k,a){
+        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=109041768', 'ym');
+
+    ym(109041768, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/109041768" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+</head>
+
+<body>
+
+<div class="topbar">
+  <a href="/" class="logo">
+    <img src="/logo.svg">
+  </a>
+  <div class="nav">${rightUI}</div>
+</div>
+
+${c}
+<footer class="site-footer">
+  <a class="footer-link" href="https://mod.indexmod.press">
+    <span class="footer-dot"></span>
+    <span class="footer-text">Mod</span>
+  </a>
+</footer>
+</body>
+</html>
+`, {
+    headers: { "Content-Type": "text/html; charset=utf-8" }
+  });
+}
+// =========================================================
 // ================= STORAGE ===============================
 // =========================================================
 const file = (slug) => slug + ".md";
