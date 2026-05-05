@@ -204,7 +204,7 @@ th, td {
 
    background: #a855f7;
    border: 1px dotted rgba(255, 255, 255, 0.55);
-   border-radius: 30px;
+   border-radius: 40px;
 
    font-family: monospace;
  }
