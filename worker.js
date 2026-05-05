@@ -218,7 +218,7 @@ th, td {
    text-decoration: none !important;
    color: #ffffff !important;
 
-   font-size: 9px;
+   font-size: 17px;
    font-family: Georgia;
  }
 
