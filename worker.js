@@ -219,7 +219,7 @@ th, td {
    color: #ffffff !important;
 
    font-size: 9px;
-   font-family: monospace;
+   font-family: Georgia;
  }
 
  /* override любых глобальных ссылок */
