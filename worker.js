@@ -208,7 +208,7 @@ th, td {
    text-decoration: none !important;
    color: #ffffff !important;
 
-   font-size: 12px;
+   font-size: 15px;
    font-family: monospace;
  }
 
@@ -291,7 +291,7 @@ ${c}
 <footer class="site-footer">
   <a class="footer-link" href="https://mod.indexmod.press">
     <span class="footer-dot"></span>
-    <span class="footer-text">Mod</span>
+    <span class="footer-text">mod</span>
   </a>
 </footer>
 </body>
