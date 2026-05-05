@@ -194,61 +194,35 @@ th, td {
    }
    /* ===== FOOTER ===== */
 
- .site-footer {
-   display: block;
-   width: fit-content;
-   margin-left: auto;
-   margin-top: 80px;
+   .site-footer {
+    margin-left: auto;
+    margin-top: 80px;
+    padding: 0;
+    background: transparent;
+    border: none;
+  }
 
-   padding: 12px 16px;
+  .footer-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: #fff !important;
+    text-decoration: none !important;
+    font: 17px Georgia;
+  }
 
-   background: #a855f7;
-   border: 1px dotted rgba(255, 255, 255, 0.55);
-   border-radius: 40px;
+  .footer-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #fff;
+    transform: translateY(-10px);
+  }
 
-   font-family: monospace;
- }
-
- /* ссылка */
- .footer-link {
-   display: inline-flex;
-   align-items: center;
-   gap: 10px;
-
-   text-decoration: none !important;
-   color: #ffffff !important;
-
-   font-size: 17px;
-   font-family: Georgia;
- }
-
- /* override любых глобальных ссылок */
- .footer-link,
- .footer-link:visited,
- .footer-link:hover,
- .footer-link:active {
-   color: #ffffff !important;
-   text-decoration: none !important;
- }
-
- /* DOT — инверсия + увеличение + подъём */
- .footer-dot {
-   width: 10px;          /* было 8px → чуть крупнее */
-   height: 10px;
-
-   border-radius: 50%;
-   background: #ffffff;  /* инверсия */
-
-   display: inline-block;
-
-   transform: translateY(-10px); /* приподняли на полстроки */
- }
-
- /* текст */
- .footer-text {
-   font-weight: 100;
-   color: #ffffff;
- }
+  .footer-text {
+    font-weight: 100;
+    color: #fff;
+  }
 `;
 }
 
