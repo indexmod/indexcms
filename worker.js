@@ -246,7 +246,7 @@ th, td {
 
  /* текст */
  .footer-text {
-   font-weight: 900;
+   font-weight: 100;
    color: #ffffff;
  }
 `;
