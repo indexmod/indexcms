@@ -195,34 +195,30 @@ th, td {
    /* ===== FOOTER ===== */
 
    .site-footer {
-    margin-left: auto;
-    margin-top: 80px;
-    padding: 0;
-    background: transparent;
-    border: none;
-  }
+     margin-top: 80px;
+     display: flex;
+     justify-content: flex-end; /* ← прижали вправо */
+   }
 
-  .footer-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    color: #fff !important;
-    text-decoration: none !important;
-    font: 17px Georgia;
-  }
+/* футер использует те же правила, что и навигация */
+.site-footer a {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
 
-  .footer-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #fff;
-    transform: translateY(-10px);
-  }
+/* точка наследует цвет ссылки */
+.footer-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  transform: translateY(-10px);
+}
 
-  .footer-text {
-    font-weight: 100;
-    color: #fff;
-  }
+.footer-text {
+  font-weight: 100;
+}
 `;
 }
 
