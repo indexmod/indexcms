@@ -218,7 +218,7 @@ th, td {
    text-decoration: none !important;
    color: #ffffff !important;
 
-   font-size: 20px;
+   font-size: 16px;
    font-family: monospace;
  }
 
