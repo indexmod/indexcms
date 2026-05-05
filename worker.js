@@ -246,6 +246,15 @@ function html(c, rightUI = "") {
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <style>${baseCSS()}</style>
 
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="description" content="Indexmod — evolving fashion and art encyclopedia">
+
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Indexmod Fashion and Art">
+
+<meta name="twitter:card" content="summary_large_image">
+
 <!-- Yandex.Metrika counter -->
 <script type="text/javascript">
     (function(m,e,t,r,i,k,a){
