@@ -25,41 +25,51 @@ body {
  padding: 100px 40px 100px;
 }
 
+/* ===== TOPBAR ===== */
+
 .topbar {
   position: relative;
 
   display: flex;
-  align-items: flex-start;
   justify-content: space-between;
 
   padding: 0;
-  margin-bottom: 40px;
+  margin: 0 0 40px 0;
+
+  align-items: flex-start;
 }
 
 /* ===== LOGO CONTROL ===== */
 
 .logo {
-  display: inline-flex;
-  align-items: flex-start;
+  display: flex;
 
-  padding: 0;
   margin: 0;
+  padding: 0;
+
+  align-self: flex-start;
 }
 
-.logo {
-  margin-left: 0;
-}
-
+/* картинка логотипа */
 .logo img {
- height: 250px;
- display: block;
- transform-origin: center;
+  height: 250px;
+  width: auto;
 
- /* постоянное дыхание */
- animation: pulse 4s infinite ease-in-out;
+  display: block;
+
+  /* убираем любой зазор снизу/сбоку */
+  margin: 0;
+  padding: 0;
+
+  /* прижимаем к верхнему и левому краю контейнера */
+  transform: translate(0, 0);
+
+  transform-origin: center;
+
+  animation: pulse 4s infinite ease-in-out;
 }
 
-/* мягкое дыхание */
+/* дыхание */
 @keyframes pulse {
   0%   { transform: scale(1); }
   50%  { transform: scale(1.04); }
