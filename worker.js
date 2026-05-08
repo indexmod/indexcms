@@ -189,7 +189,7 @@ th, td {
 
    @media (max-width: 640px) {
      .letter {
-       font-size: 25px;
+       font-size: 20px;
      }
    }
    /* ===== FOOTER ===== */
@@ -218,7 +218,7 @@ th, td {
    }
 
    .footer-text {
-     font-weight: 400;
+     font-weight: 900;
      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
    }
 `;
