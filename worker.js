@@ -126,7 +126,7 @@ strong {
 
 /* изображения из markdown */
 img {
-  max-width: 100%;
+  max-width: 50%;
   height: auto;
   display: block;
   margin: 20px 0;
@@ -218,7 +218,8 @@ th, td {
    }
 
    .footer-text {
-     font-weight: 100;
+     font-weight: 900;
+     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
    }
 `;
 }
@@ -272,7 +273,7 @@ ${c}
 <footer class="site-footer">
   <a class="footer-link" href="https://mod.indexmod.press">
     <span class="footer-dot"></span>
-    <span class="footer-text">XX лет</span>
+    <span class="footer-text">XX ЛЕТ</span>
   </a>
 </footer>
 </body>
