@@ -205,7 +205,7 @@ th, td {
      align-items: center;
      gap: 10px;
 
-     color: #1a73e8;
+     color: violet;
      text-decoration: none;
    }
 
