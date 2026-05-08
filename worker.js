@@ -189,7 +189,7 @@ th, td {
 
    @media (max-width: 640px) {
      .letter {
-       font-size: 32px;
+       font-size: 25px;
      }
    }
    /* ===== FOOTER ===== */
@@ -218,7 +218,7 @@ th, td {
    }
 
    .footer-text {
-     font-weight: 100;
+     font-weight: 400;
      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
    }
 `;
@@ -273,7 +273,7 @@ ${c}
 <footer class="site-footer">
   <a class="footer-link" href="https://mod.indexmod.press">
     <span class="footer-dot"></span>
-    <span class="footer-text">XX ЛЕТ</span>
+    <span class="footer-text">xx лет</span>
   </a>
 </footer>
 </body>
