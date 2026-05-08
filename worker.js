@@ -218,7 +218,7 @@ th, td {
    }
 
    .footer-text {
-     font-weight: 900;
+     font-weight: 100;
      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
    }
 `;
