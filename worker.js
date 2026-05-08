@@ -471,7 +471,7 @@ slug: \${slug}
 
 Write here...
 
-https://images.unsplash.com/photo-1520975916090-3105956dac38
+![](https://images.unsplash.com/photo-1520975916090-3105956dac38)
 
 
 ## Basic markup
@@ -486,6 +486,32 @@ https://images.unsplash.com/photo-1520975916090-3105956dac38
 ## Footnote example
 
 Text with reference [1]
+
+<!-- Prompt:
+- Do not change the language of the article; preserve the original language.
+- If the topic is formatted as "First Name Last Name", the title must be "Last Name, First Name".
+- Change title: A Template to the main topic of the article.
+- Create permalink: based on the title.
+- Add frontmatter in the following format:
+
+---
+title: Alexánder, Maxim
+slug: alexander-maxim
+---
+
+- Do not add an H1 title below the frontmatter, since the title is rendered automatically from frontmatter.
+- Create or update the line ***Updated 2025-01-31*** as the first line of the article content directly below frontmatter, replacing the date with the current date.
+- Change the section heading "Citations" to ## Citations.
+- Format links in the "Citations" section as: **[1]** [URL](URL).
+- When referencing a source in the text, use the format: **[x]**, **[x]**.
+- Ensure citation numbers correspond to entries in the "Citations" section.
+- Make citation numbers clickable using the specified format above.
+- Add a list of related topics in the same format.
+- Use the template "[Topic Name](topic-link)" for each item.
+- The ## See also section should be automatically included at the end of the article.
+- Return the result in md code.
+- Keep this Prompt after editing at the end of the code.
+-->
 
 \`;
 
