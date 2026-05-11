@@ -510,6 +510,7 @@ slug: alexander-maxim
 - Use the template "[Topic Name](topic-link)" for each item.
 - The ## See also section should be automatically included at the end of the article.
 - Return the result in md code.
+- Remove all (:contentReference[oaicite:]{index=})
 - Keep this Prompt after editing at the end of the code.
 -->
 
